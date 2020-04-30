@@ -356,6 +356,8 @@ public class DiagramPanel extends JPanel {
         northPanel.add(newFile);
 
 
+        //комм
+
         JButton openFileButton = new JButton();
         openFileButton.addActionListener((ActionEvent e) -> {
             if(rootDiagramObject.getFirstSubObj()!=null) {
