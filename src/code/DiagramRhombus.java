@@ -11,15 +11,10 @@ class DiagramRhombus extends AbstractDiagramNode {
 
     public DiagramRhombus(double mX, double mY, String caption) {
         super(mX, mY, caption);
-        getVertices().clear();
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2),  minY(), "bot-miiddle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2), minY()  + scale(HEIGHT) , "top-miiddle"));
-        getVertices().add(new Vertex(minX(),  minY() + scale(HEIGHT / 2), "left-miiddle"));
-        getVertices().add(new Vertex(minX() + scale(WIDTH),  minY() + scale(HEIGHT / 2), "right-miiddle"));
+
+        addVertex("down", new Vertex(mX+ (WIDTH / 2),  mY));
+        addVertex("up", new Vertex(mX+ (WIDTH / 2), mY  + (HEIGHT)));
     }
-
-
-
 
 
     @Override
@@ -27,6 +22,10 @@ class DiagramRhombus extends AbstractDiagramNode {
 
         double mX = getmX();
         double mY = getmY();
+
+        vertices.clear();
+        addVertex("down", new Vertex( scaleX(mX),  scaleY(mY-HEIGHT/2)));
+        addVertex("up", new Vertex( scaleX(mX),  scaleY(mY +HEIGHT/2)));
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
         FontMetrics metrics = getCanvas().getFontMetrics();
@@ -45,11 +44,11 @@ class DiagramRhombus extends AbstractDiagramNode {
         getCanvas().setColor(colorFont);
         getCanvas().drawString(getCaption(), (int)(scaleX(mX)-shift/2) , scaleY(mY + 0.5 * (FONTSIZEPT)));
 
-        getVertices().clear();
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2),  minY(), "bot-miiddle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2), minY()  + scale(HEIGHT) , "top-miiddle"));
-        getVertices().add(new Vertex(   minX(),  minY() + scale(HEIGHT / 2), "left-miiddle"));
-        getVertices().add(new Vertex(minX() + scale(WIDTH),  minY() + scale(HEIGHT / 2), "right-miiddle"));
+//        getVertices().clear();
+//        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2),  minY(), "bot-miiddle"));
+//        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2), minY()  + scale(HEIGHT) , "top-miiddle"));
+//        getVertices().add(new Vertex(   minX(),  minY() + scale(HEIGHT / 2), "left-miiddle"));
+//        getVertices().add(new Vertex(minX() + scale(WIDTH),  minY() + scale(HEIGHT / 2), "right-miiddle"));
 
 
     }
@@ -82,28 +81,27 @@ class DiagramRhombus extends AbstractDiagramNode {
         return getmY() + HEIGHT / 2;
     }
 
+
     @Override
     protected Vertex getTopMiddleVertex(){
-        return getVertices().get(1);
+        return vertices.get("up");
     }
-
 
     @Override
     protected Vertex getBotMiddleVertex(){
-        return getVertices().get(0);
+        return vertices.get("down");
     }
-
 
     @Override
     protected Vertex getLeftVertex(){
-        return getVertices().get(2);
+        return null;
     }
-
 
     @Override
     protected Vertex getRightVertex(){
-        return getVertices().get(3);
+        return null;
     }
+
 
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {

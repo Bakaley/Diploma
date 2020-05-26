@@ -7,13 +7,9 @@ public class DiagramParallelogram extends AbstractDiagramNode {
 
     public DiagramParallelogram(double mX, double mY, String caption) {
         super(mX, mY, caption);
-        getVertices().clear();
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 2.5),  minY(),                     "bot-middle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 5),  minY(),                       "bot-left"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 7.5),  minY(),                     "bot-right"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 2.5), minY()  + scale(HEIGHT) , "top-left"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 5), minY()  + scale(HEIGHT) ,   "top-middle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 7.5), minY()  + scale(HEIGHT) , "top-right"));
+
+        addVertex("down", new Vertex(mX+ (WIDTH / 2),  mY));
+        addVertex("up", new Vertex(mX+ (WIDTH / 2), mY  + (HEIGHT)));
     }
 
 
@@ -23,18 +19,15 @@ public class DiagramParallelogram extends AbstractDiagramNode {
         double mX = getmX();
         double mY = getmY();
 
+        vertices.clear();
+        addVertex("down", new Vertex( scaleX(mX),  scaleY(mY-HEIGHT/2)));
+        addVertex("up", new Vertex( scaleX(mX),  scaleY(mY +HEIGHT/2)));
+
+
         int[] x = {scaleX (mX - WIDTH / 2),  scaleX (mX - 0.3 * WIDTH),scaleX (mX + WIDTH / 2), scaleX (mX + 0.3 * WIDTH)};
         int[] y = {scaleY (mY + HEIGHT / 2), scaleY (mY - HEIGHT / 2), scaleY (mY - HEIGHT / 2), scaleY (mY + HEIGHT / 2)};
         int[] x2 = {scaleX (mX - WIDTH / 2 )+1,  scaleX (mX - 0.3 * WIDTH)+1,scaleX (mX + WIDTH / 2), scaleX (mX + 0.3 * WIDTH)};
         int[] y2 = {scaleY (mY + HEIGHT / 2 ), scaleY (mY - HEIGHT / 2)+1, scaleY (mY - HEIGHT / 2)+1, scaleY (mY + HEIGHT / 2)};
-
-        getVertices().clear();
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 2.5),  minY(),                     "bot-middle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 5),  minY(),                       "bot-left"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 7.5),  minY(),                     "bot-right"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 2.5), minY()  + scale(HEIGHT) , "top-left"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 5), minY()  + scale(HEIGHT) ,   "top-middle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 10 * 7.5), minY()  + scale(HEIGHT) , "top-right"));
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
         FontMetrics metrics = getCanvas().getFontMetrics();
@@ -79,23 +72,22 @@ public class DiagramParallelogram extends AbstractDiagramNode {
 
     @Override
     protected Vertex getTopMiddleVertex(){
-        return getVertices().get(4);
+        return vertices.get("up");
     }
 
     @Override
     protected Vertex getBotMiddleVertex(){
-        return getVertices().get(1);
+        return vertices.get("down");
     }
-
 
     @Override
     protected Vertex getLeftVertex(){
-        return getVertices().get(4);
+        return null;
     }
 
     @Override
     protected Vertex getRightVertex(){
-        return getVertices().get(1);
+        return null;
     }
 
     @Override

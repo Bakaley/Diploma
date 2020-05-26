@@ -5,12 +5,10 @@ import java.awt.*;
 public class Vertex {
     double  x;
     double  y;
-    String name;
 
-    Vertex(double x, double y, String name){
+    Vertex(double x, double y){
         this.x = x;
         this.y = y;
-        this.name = name;
     }
 
 /*

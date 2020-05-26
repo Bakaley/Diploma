@@ -10,16 +10,9 @@ class DiagramRectangle extends AbstractDiagramNode {
 
     public DiagramRectangle(double i, double j, String string) {
         super(i, j, string);    getVertices().clear();
-        getVertices().add(new Vertex((i+ scale(WIDTH / 2)),    scale(j), "bot-middle"));
-        getVertices().add(new Vertex((i+ scale(WIDTH / 4)),    scale(j), "bot-left"));
-        getVertices().add(new Vertex((i+ scale(WIDTH / 4 * 3)),scale(j), "bot-right"));
-        getVertices().add(new Vertex((i+ scale(WIDTH / 2)),    scale(j + HEIGHT), "top-middle"));
-        getVertices().add(new Vertex((i+ scale(WIDTH / 4)),    scale(j + HEIGHT), "top-left"));
-        getVertices().add(new Vertex((i+ scale(WIDTH / 4 * 3)),scale(j + HEIGHT), "top-right"));
-        getVertices().add(new Vertex((i),             scale(j + HEIGHT / 3), "left-bot"));
-        getVertices().add(new Vertex((i),             scale(j + HEIGHT / 3 * 2), "left-top"));
-        getVertices().add(new Vertex((i+ scale(WIDTH)),        scale(j +HEIGHT / 3), "right-bot"));
-        getVertices().add(new Vertex((i+ scale(WIDTH)),        scale(j + HEIGHT / 3 * 2), "right-top"));
+
+        addVertex("down", new Vertex(i+ (WIDTH / 2),  j));
+        addVertex("up", new Vertex(i+ (WIDTH / 2), j  + (HEIGHT)));
     }
 
 
@@ -30,19 +23,9 @@ class DiagramRectangle extends AbstractDiagramNode {
         double mX = getmX();
         double mY = getmY();
 
-        getVertices().clear();
-        getVertices().add(new Vertex((minX()+ scale(WIDTH / 2)),    (minY()), "bot-middle"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH / 4)),    (minY()), "bot-left"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH / 4 * 3)),(minY()), "bot-right"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH / 2)),    (minY() + scale(HEIGHT)), "top-middle"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH / 4)),    (minY() + scale(HEIGHT)), "top-left"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH / 4) * 3),(minY() + scale(HEIGHT)), "top-right"));
-        getVertices().add(new Vertex((minX()),                            (minY() + scale(HEIGHT / 3)), "left-bot"));
-        getVertices().add(new Vertex((minX()),                            (minY() + scale(HEIGHT / 3 )* 2), "left-top"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH)),              (minY() +scale(HEIGHT / 3)), "right-bot"));
-        getVertices().add(new Vertex((minX()+ scale(WIDTH)),              (minY() + scale(HEIGHT / 3 * 2)), "right-top"));
-
-
+        vertices.clear();
+        addVertex("down", new Vertex( scaleX(mX),  scaleY(mY-HEIGHT/2)));
+        addVertex("up", new Vertex( scaleX(mX),  scaleY(mY +HEIGHT/2)));
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
         FontMetrics metrics = getCanvas().getFontMetrics();
@@ -78,22 +61,22 @@ class DiagramRectangle extends AbstractDiagramNode {
 
     @Override
     protected Vertex getTopMiddleVertex(){
-        return getVertices().get(3);
+        return vertices.get("up");
     }
 
     @Override
     protected Vertex getBotMiddleVertex(){
-        return getVertices().get(0);
+        return vertices.get("down");
     }
 
     @Override
     protected Vertex getLeftVertex(){
-        return getVertices().get(7);
+        return null;
     }
 
     @Override
     protected Vertex getRightVertex(){
-        return getVertices().get(9);
+        return null;
     }
 
     @Override

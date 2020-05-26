@@ -68,8 +68,8 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
 
         getCanvas().setColor(Color.BLACK);
         getCanvas().setPaintMode();
+           drawFrom(nFrom.getVertices().get("down"));
 
-           drawFrom(nFrom.getVertices().get(0));
 /*
         if(nFrom.lines_out.size()==2 ) {
             drawFrom(nFrom.getLeftVertex());
@@ -96,37 +96,33 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
 
     private void drawFrom(Vertex vertex) {
 
-        double x1 = vertex.x;
-        double y1 = vertex.y;
-        double x2 = nTo.getVertices().get(0).x;
-        double y2 = nTo.getVertices().get(0).y;
-        String text = vertex.name;
+
+        double x1 = nFrom.getTopMiddleVertex().x;
+        double y1 = nFrom.getTopMiddleVertex().y;
+        double x2 = nTo.getBotMiddleVertex().x;
+        double y2 = nTo.getBotMiddleVertex().y;
 
         int[] abscissae = new int[3];
         int[] ordinates = new int[3];
 
         if ((nFrom.getBotMiddleVertex().x == nTo.getBotMiddleVertex().x) && (nFrom.getBotMiddleVertex().y < nTo.getBotMiddleVertex().y)) {
-            x1 = nFrom.getTopMiddleVertex().x;
-            y1 = nFrom.getTopMiddleVertex().y;
-            x2 = nTo.getBotMiddleVertex().x;
-            y2 = nTo.getBotMiddleVertex().y;
+
+            System.out.println(nFrom.getTopMiddleVertex().x + " " + nFrom.getmX() + " " +
+            nFrom.getTopMiddleVertex().y + " " + nFrom.getmY() + " " +
+                    nTo.getBotMiddleVertex().x + " " + nTo.getmX() + " " +
+                    nTo.getBotMiddleVertex().y + " " +  nTo.getmY());
+
+
             getCanvas().drawLine((int)(x1), (int)(y1), (int)(x2), (int)(y2));
-            //  getArrowPoints(new Point2D.Double(x1, y1), new Point2D.Double(x2, y2), abscissae, ordinates);
-            //  getCanvas().fillPolygon(abscissae, ordinates, 3);
-            //  getCanvas().drawPolygon(abscissae, ordinates, 1);
-            last_from = new Point2D.Double(x1, y1);
-            last_to = new Point2D.Double(x2, y2);
-            last_lenth = lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nTo.getBotMiddleVertex().x, nTo.getBotMiddleVertex().y);
+
         } else if ((nFrom.getBotMiddleVertex().y + scale(40) < nTo.getBotMiddleVertex().y)) {
-//||(Math.abs(nFrom.getBotMiddleVertex().x - nTo.getBotMiddleVertex().x) < scale(200))
+
             getCanvas().drawLine(
                     (int)nFrom.getTopMiddleVertex().x,
                      (int)nFrom.getTopMiddleVertex().y,
                      (int)nFrom.getTopMiddleVertex().x,
                      (int)nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2);
-            // getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y), new Point2D.Double(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 4), abscissae, ordinates);
-            // getCanvas().fillPolygon(abscissae, ordinates, 3);
-            // getCanvas().drawPolygon(abscissae, ordinates, 1);
+
 
             last_from = new Point2D.Double(nTo.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2);
             last_to = new Point2D.Double(nTo.getBotMiddleVertex().x, nTo.getBotMiddleVertex().y);
@@ -155,66 +151,6 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
                     (int) nTo.getBotMiddleVertex().x,
                     (int) nTo.getBotMiddleVertex().y);
 
-
-
-           /*             if (nFrom.getTopMiddleVertex().x < nTo.getBotMiddleVertex().x) {
-                            if(!(this.last_lenth == max(nTo.get_lines_in(), this))) {
-                                getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2),
-                                        new Point2D.Double(nFrom.getTopMiddleVertex().x + lenth(nFrom.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2,
-                                                nTo.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2), nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2), abscissae, ordinates);
-                            }
-                            else {
-                                getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2),
-                                        new Point2D.Double(nFrom.getTopMiddleVertex().x + lenth(nFrom.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2,
-                                                nTo.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2) /2, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2), abscissae, ordinates);
-
-                            }
-                        }
-                        else {
-                            if (!(this.last_lenth == max(nTo.get_lines_in(), this))) {
-                                getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2),
-                                        new Point2D.Double(nFrom.getTopMiddleVertex().x - lenth(nFrom.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2,
-                                                nTo.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2), nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2), abscissae, ordinates);
-                            }
-                            else{
-                                getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2),
-                                        new Point2D.Double(nFrom.getTopMiddleVertex().x - lenth(nFrom.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2,
-                                                nTo.getTopMiddleVertex().x,
-                                                nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2) /2 , nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2), abscissae, ordinates);
-                            }
-                        }
-                        getCanvas().fillPolygon(abscissae, ordinates, 3);
-                        getCanvas().drawPolygon(abscissae, ordinates, 1);
-                    }
-
-                    if(this.last_lenth == max(nTo.get_lines_in(), this)){
-                       getCanvas().drawLine(
-                               nTo.getTopMiddleVertex().x,
-                               nFrom.getTopMiddleVertex().y + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2,
-                               nTo.getBotMiddleVertex().x,
-                               nTo.getBotMiddleVertex().y);
-                        getArrowPoints(new Point2D.Double( nTo.getTopMiddleVertex().x,
-                                nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2),
-                                new Point2D.Double(nTo.getBotMiddleVertex().x, nTo.getBotMiddleVertex().y), abscissae, ordinates);
-
-                       getCanvas().fillPolygon(abscissae, ordinates, 3);
-                       getCanvas().drawPolygon(abscissae, ordinates, 1);
-
-                } else {
-                        getArrowPoints(new Point2D.Double(nTo.getTopMiddleVertex().x,
-                                        nFrom.getTopMiddleVertex().y + lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nFrom.getTopMiddleVertex().x, nTo.getBotMiddleVertex().y) / 2),
-                                new Point2D.Double(nTo.getBotMiddleVertex().x, nTo.getBotMiddleVertex().y), abscissae, ordinates);
-                        getCanvas().fillPolygon(abscissae, ordinates, 3);
-                        getCanvas().drawPolygon(abscissae, ordinates, 1);
-                    }
-                    */
         } else if ((nFrom.getBotMiddleVertex().y + scale(40) > nTo.getBotMiddleVertex().y) && (Math.abs(nFrom.getBotMiddleVertex().x - nTo.getBotMiddleVertex().x) > scale(50))) {
 
             getCanvas().drawLine(
@@ -251,23 +187,6 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
                      (int)   nTo.getBotMiddleVertex().y - scale(20),
                      (int)   nTo.getTopMiddleVertex().x,
                      (int)   nTo.getBotMiddleVertex().y - scale(20));
-
-                      /* if(!(nTo.get_lines_in().size()==1)) {
-                           getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x - lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nTo.getTopMiddleVertex().x, nFrom.getBotMiddleVertex().y) / 2,
-                                   nTo.getBotMiddleVertex().y - scale(20)), new Point2D.Double(nFrom.getTopMiddleVertex().x - (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nTo.getTopMiddleVertex().x, nFrom.getBotMiddleVertex().y) / 2,
-                                   nTo.getBotMiddleVertex().y - scale(20)), abscissae, ordinates);
-                           getCanvas().fillPolygon(abscissae, ordinates, 3);
-                           getCanvas().drawPolygon(abscissae, ordinates, 1);
-                       }
-                       if(!(nTo.get_lines_in().size()==1)){
-                           getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nTo.getTopMiddleVertex().x, nFrom.getBotMiddleVertex().y) / 2,
-                                           nTo.getBotMiddleVertex().y-scale(20)),
-                                   new Point2D.Double(nTo.getTopMiddleVertex().x,
-                                           nTo.getBotMiddleVertex().y-scale(20)), abscissae, ordinates);
-                           getCanvas().fillPolygon(abscissae, ordinates, 3);
-                           getCanvas().drawPolygon(abscissae, ordinates, 1);
-                       }*/
-
                     getArrowPoints(new Point2D.Double(nFrom.getTopMiddleVertex().x + (int) lenth(nFrom.getTopMiddleVertex().x, nFrom.getTopMiddleVertex().y, nTo.getTopMiddleVertex().x, nFrom.getBotMiddleVertex().y) / 2,
                                     nTo.getBotMiddleVertex().y - scale(20)),
                             new Point2D.Double(nTo.getTopMiddleVertex().x,

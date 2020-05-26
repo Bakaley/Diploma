@@ -13,9 +13,9 @@ class DiagramTerminator extends AbstractDiagramNode {
 
     public DiagramTerminator(double i, double j, String string) {
         super(i, j, string);
-        getVertices().clear();
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2),  minY(), "bot-miiddle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2), minY()  + scale(HEIGHT), "top-miiddle"));
+
+        addVertex("down", new Vertex(i+ (WIDTH / 2),  j));
+        addVertex("up", new Vertex(i+ (WIDTH / 2), j  + (HEIGHT)));
     }
 
 
@@ -26,9 +26,10 @@ class DiagramTerminator extends AbstractDiagramNode {
         double mX = getmX();
         double mY = getmY();
 
-        getVertices().clear();
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2), minY(), "bot-miiddle"));
-        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2), minY() + scale(HEIGHT), "top-miiddle"));
+
+        vertices.clear();
+        addVertex("down", new Vertex( scaleX(mX),  scaleY(mY-HEIGHT/2)));
+        addVertex("up", new Vertex( scaleX(mX),  scaleY(mY +HEIGHT/2)));
 
 
 
@@ -89,22 +90,22 @@ class DiagramTerminator extends AbstractDiagramNode {
 
     @Override
     protected Vertex getTopMiddleVertex(){
-        return getVertices().get(1);
+        return vertices.get("up");
     }
 
     @Override
     protected Vertex getBotMiddleVertex(){
-        return getVertices().get(0);
+        return vertices.get("down");
     }
 
     @Override
     protected Vertex getLeftVertex(){
-        return getVertices().get(0);
+        return null;
     }
 
     @Override
     protected Vertex getRightVertex(){
-        return getVertices().get(1);
+        return null;
     }
 
     @Override

@@ -21,17 +21,20 @@ abstract class AbstractDiagramNode extends DiagramObject{
     protected Color colorBorder = Color.black;
 
 
-    private ArrayList<Vertex> vertices = new ArrayList<>();
-    public ArrayList<Vertex> getVertices (){
+    protected HashMap <String, Vertex> vertices = new HashMap<>();
+
+    public HashMap<String, Vertex> getVertices (){
         return this.vertices;
+    }
+
+    public void addVertex (String string, Vertex vertex){
+        vertices.put(string, vertex);
     }
 
     public void setColorFont (Color color) { this.colorFont = color;}
     public void setColorFill (Color color) { this.colorFill = color;}
     public void setColorBorder(Color color) {this.colorBorder = color;}
 
-    //protected ArrayList<DiagramGeneralization> lines_in = new ArrayList<>();
-    //protected ArrayList<DiagramGeneralization> lines_out = new ArrayList<>();
 
     public ArrayList<DiagramGeneralization> get_lines_in() {
         HashMap <Integer, DiagramObject> diagramObjects = ((Scheme)getDiagramObject()).diagramObjects;
@@ -126,6 +129,7 @@ abstract class AbstractDiagramNode extends DiagramObject{
     protected abstract Vertex getBotMiddleVertex();
     protected abstract Vertex getLeftVertex();
     protected abstract Vertex getRightVertex();
+
 
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {
