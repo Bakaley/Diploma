@@ -68,7 +68,7 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
 
         getCanvas().setColor(Color.BLACK);
         getCanvas().setPaintMode();
-           drawFrom(nFrom.getVertices().get("down"));
+           draw();
 
 /*
         if(nFrom.lines_out.size()==2 ) {
@@ -94,7 +94,7 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
         // double len = Math.sqrt((nFrom.getVertices().get(0).x - nTo.getVertices().get(0).x) * (nFrom.getVertices().get(0).x - nTo.getVertices().get(0).x) + (nFrom.getVertices().get(0).y - nTo.getVertices().get(0).y) * (nFrom.getVertices().get(0).y - nTo.getVertices().get(0).y));
     }
 
-    private void drawFrom(Vertex vertex) {
+    private void draw() {
 
 
         double x1 = nFrom.getTopMiddleVertex().x;
@@ -107,10 +107,7 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
 
         if ((nFrom.getBotMiddleVertex().x == nTo.getBotMiddleVertex().x) && (nFrom.getBotMiddleVertex().y < nTo.getBotMiddleVertex().y)) {
 
-            System.out.println(nFrom.getTopMiddleVertex().x + " " + nFrom.getmX() + " " +
-            nFrom.getTopMiddleVertex().y + " " + nFrom.getmY() + " " +
-                    nTo.getBotMiddleVertex().x + " " + nTo.getmX() + " " +
-                    nTo.getBotMiddleVertex().y + " " +  nTo.getmY());
+
 
 
             getCanvas().drawLine((int)(x1), (int)(y1), (int)(x2), (int)(y2));

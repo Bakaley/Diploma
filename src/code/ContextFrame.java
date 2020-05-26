@@ -211,7 +211,7 @@ public class ContextFrame extends JFrame {
                 for (int i : numbers){
                     lines.get(i).removeFromQueue();
                     ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.remove(lines.get(i).getId());
-                    System.out.println(lines.size());
+
                 }
                 canvas.repaint();
                 DiagramPanel.contextFrame.dispose();
