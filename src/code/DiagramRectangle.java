@@ -40,6 +40,7 @@ class DiagramRectangle extends AbstractDiagramNode {
 
     }
 
+    @Override
     protected boolean internalTestHit(double x, double y) {
         double dX = x - getmX();
         double dY = y - getmY();
@@ -57,6 +58,11 @@ class DiagramRectangle extends AbstractDiagramNode {
     @Override
     protected double getMaxX() {
         return getmX() +  WIDTH/2 ;
+    }
+
+    @Override
+    protected double getMaxY() {
+        return getmY() + HEIGHT / 2;
     }
 
     @Override
@@ -79,10 +85,7 @@ class DiagramRectangle extends AbstractDiagramNode {
         return null;
     }
 
-    @Override
-    protected double getMaxY() {
-        return getmY() + HEIGHT / 2;
-    }
+
 
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {

@@ -20,7 +20,6 @@ abstract class AbstractDiagramNode extends DiagramObject{
     protected Color colorFont = Color.black;
     protected Color colorBorder = Color.black;
 
-
     protected HashMap <String, Vertex> vertices = new HashMap<>();
 
     public HashMap<String, Vertex> getVertices (){

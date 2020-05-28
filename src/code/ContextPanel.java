@@ -6,22 +6,29 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
 public class ContextPanel extends JPanel {
 
-   // private AbstractDiagramNode node;
-    AbstractDiagramNode node;
-    ArrayList<DiagramGeneralization> lines;
+    private AbstractDiagramNode node;
+    private ArrayList<DiagramGeneralization> lines;
+    private TextField textFieldX;
+    private TextField textFieldY;
+    private TextField textFieldExpression;
+    private Canvas canvas;
+    private ContextFrame frame;
 
     private int oldX;
     private int oldY;
 
-    TextField textFieldX;
-    TextField textFieldY;
-    TextField textFieldExpression;
-    Canvas canvas;
-    ContextFrame frame;
+    public TextField getTextFieldX() {
+        return textFieldX;
+    }
+
+    public TextField getTextFieldY() {
+        return textFieldY;
+    }
 
     JTable table;
 
@@ -102,7 +109,7 @@ public class ContextPanel extends JPanel {
 
             @Override
             public void keyReleased(KeyEvent event) {
-                setCoordinates(textFieldX, oldX);
+                setCoordinateFromField(textFieldX, oldX);
             }
 
 
@@ -120,7 +127,7 @@ public class ContextPanel extends JPanel {
 
             @Override
             public void keyReleased(KeyEvent event) {
-                setCoordinates(textFieldY, oldY);
+                setCoordinateFromField(textFieldY, oldY);
             }
         });
 
@@ -140,13 +147,10 @@ public class ContextPanel extends JPanel {
             }
         });
 
-
         lines = node.get_lines_in();
         lines.addAll(node.get_lines_out());
 
-
         if (node.getClass().getName().contains("Terminator")) textFieldExpression.setEditable(false);
-
 
         JPanel jpanelbutton3 = new JPanel();
         jpanelbutton3.setLayout(new FlowLayout());
@@ -195,11 +199,7 @@ public class ContextPanel extends JPanel {
 
         JButton jButton_delete_block = new JButton();
         jButton_delete_block.addActionListener( e-> {
-            deleteLines();
-            node.removeFromQueue();
-            ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.remove(node.getId());
-            canvas.repaint();
-            DiagramPanel.contextFrame.dispose();
+            deleteBlock();
         });
         jButton_delete_block.setIcon(new ImageIcon(AppStart.class.getResource("/resources/delete.png")));
 
@@ -209,7 +209,6 @@ public class ContextPanel extends JPanel {
         jpanelLinks.add(jButton_delete_lines);
         jpanelLinks.add(jButton_clear_lines);
         jpanelLinks.add(jButton_delete_block);
-
 
         add(Box.createRigidArea(new Dimension(0, 25)));
         add(jPanelCoordinates);
@@ -223,17 +222,12 @@ public class ContextPanel extends JPanel {
         add(jpanelbutton5);
         add(Box.createRigidArea(new Dimension(0, 25)));
 
-
-
         add(new JScrollPane(table));
         add(Box.createRigidArea(new Dimension(0, 0)));
-
         add(jpanelLinks);
-
-
     }
 
-    private void deleteLines() {
+    public void deleteLines() {
         Iterator<DiagramGeneralization> iterator = lines.iterator();
         AbstractDiagramLink link;
         while (iterator.hasNext()) {
@@ -244,40 +238,49 @@ public class ContextPanel extends JPanel {
         canvas.repaint();
         DiagramPanel.contextFrame.dispose();
         new ContextFrame("Свойства " + node.getCaption(), node, canvas);
+
     }
 
 
-    private void deleteLines(int[] numbers) {
+    public void deleteLines(int[] numbers) {
         for (int i : numbers){
             lines.get(i).removeFromQueue();
             ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.remove(lines.get(i).getId());
         }
+
         canvas.repaint();
+
         DiagramPanel.contextFrame.dispose();
         new ContextFrame("Свойства " + node.getCaption(), node, canvas);
     }
 
+    public HashMap<Integer, DiagramObject> deleteBlock(){
+        deleteLines();
+        node.removeFromQueue();
+        ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.remove(node.getId());
+        canvas.repaint();
+        DiagramPanel.contextFrame.dispose();
+
+        return ((Scheme)DiagramPanel.getDiagramObject()).diagramObjects;
+
+    }
 
 
-    public void setCoordinates (TextField settedTextField, double oldValue){
+
+    public double setCoordinateFromField (TextField settedTextField, double oldValue){
         if (settedTextField.getText().equals("") || (settedTextField.getText().equals("-")))
         {
-            return;
+            return oldValue;
         }
         else try {
             node.move(Double.valueOf(textFieldX.getText()), Double.valueOf(textFieldY.getText()));
-            oldValue = Double.valueOf(textFieldX.getText());
+            oldValue = Double.valueOf(settedTextField.getText());
         } catch (NumberFormatException e) {
             {
                 settedTextField.setText(String.valueOf(oldValue));
-
             }
         }
         canvas.repaint();
-    }
-
-    public String function (String test){
-        System.out.println(test);
-        return " q " + test;
+        return oldValue;
     }
 }

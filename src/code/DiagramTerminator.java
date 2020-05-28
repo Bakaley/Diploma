@@ -57,7 +57,7 @@ class DiagramTerminator extends AbstractDiagramNode {
 
     }
 
-
+    @Override
     protected boolean internalTestHit(double x, double y) {
         double dX = x - getmX();
         double dY = y - getmY();

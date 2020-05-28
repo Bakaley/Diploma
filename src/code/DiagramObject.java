@@ -47,6 +47,8 @@ public abstract class DiagramObject {
     }
 
 
+
+
     protected JSONObject getJSON(){return null;}
 
 
