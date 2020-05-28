@@ -35,6 +35,9 @@ class DiagramDependency extends AbstractDiagramLink implements LabelParent{
         final Point2D.Double from = getBorder(dX, dY, nFrom);
         final Point2D.Double to = getBorder(dX, dY, nTo);
 
+        System.out.println(from);
+        System.out.println(to);
+
         final double x1 = nFrom.getmX() + from.getX();
         final double y1 = nFrom.getmY() + from.getY();
         final double x2 = nTo.getmX() - to.getX();

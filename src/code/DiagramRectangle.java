@@ -41,7 +41,7 @@ class DiagramRectangle extends AbstractDiagramNode {
     }
 
     @Override
-    protected boolean internalTestHit(double x, double y) {
+    public boolean internalTestHit(double x, double y) {
         double dX = x - getmX();
         double dY = y - getmY();
         return dY > -HEIGHT / 2 && dY < HEIGHT / 2 && dX > -WIDTH/2 && dX < WIDTH/2 ;

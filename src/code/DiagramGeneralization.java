@@ -75,10 +75,6 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
         int[] ordinates = new int[3];
 
         if ((nFrom.getBotMiddleVertex().getX() == nTo.getBotMiddleVertex().getX()) && (nFrom.getBotMiddleVertex().getY() < nTo.getBotMiddleVertex().getY())) {
-
-
-
-
             getCanvas().drawLine((int)(x1), (int)(y1), (int)(x2), (int)(y2));
 
         } else if ((nFrom.getBotMiddleVertex().getY() + scale(40) < nTo.getBotMiddleVertex().getY())) {

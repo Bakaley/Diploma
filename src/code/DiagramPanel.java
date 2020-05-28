@@ -555,7 +555,8 @@ public class DiagramPanel extends JPanel {
         northPanel.add(hintLabel);
 
     }
-    private void saveFile (){
+
+    public void saveFile (){
             JSONObject jsonFile = createJSON();
             JFileChooser jFileChooser = new JFileChooser("C:\\Users\\L\\Documents\\Schemes\\");
 
@@ -592,7 +593,8 @@ public class DiagramPanel extends JPanel {
     }
 
 
-    private JSONObject createJSON() {
+
+    public JSONObject createJSON() {
        DiagramObject currentObject = rootDiagramObject.getFirstSubObj();
 
        JSONArray blockArray = new JSONArray();
@@ -627,7 +629,7 @@ public class DiagramPanel extends JPanel {
 
     //парсинг файла JSON
 
-    private void openJSONfile(String filepath){
+    public void openJSONfile(String filepath){
         JSONParser jsonParser = new JSONParser();
 
         try (FileReader reader = new FileReader(filepath))
@@ -705,9 +707,7 @@ public class DiagramPanel extends JPanel {
     }
 
 
-
-
-    private void canvasMouseDown(MouseEvent e) {
+    public void canvasMouseDown(MouseEvent e) {
         if (rootDiagramObject == null)
             return;
 
@@ -1017,62 +1017,11 @@ public class DiagramPanel extends JPanel {
         canvas.repaint();
     }
 
-    /**
-     * "Lasso" painter.
-     */
-    private class Lasso extends DiagramObject {
-        @Override
-        protected void internalDrawSelection(int dX, int dY) {
-
-            getCanvas().setColor(Color.GREEN);
-            getCanvas().setXORMode(Color.WHITE);
-
-            Graphics2D g2 = (Graphics2D) getCanvas();
-
-            float dash1[] = { 5.0f };
-            BasicStroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 5.0f, dash1, 0.0f);
-            Stroke s = g2.getStroke();
-            g2.setStroke(dashed);
-
-            int x0 = dX > 0 ? startPoint.x : startPoint.x + dX;
-            int y0 = dY > 0 ? startPoint.y : startPoint.y + dY;
-
-            g2.drawRect(x0, y0, Math.abs(dX), Math.abs(dY));
-            g2.setStroke(s);
-
-            getCanvas().setPaintMode();
-        }
-
-        @Override
-        protected void internalDrop(double dX, double dY) {
-            int minX;
-            int minY;
-
-            dX = dX * scale;
-            dY = dY * scale;
-
-            if (dX < 0) {
-                minX = startPoint.x + round(dX);
-                dX = -dX;
-            } else {
-                minX = startPoint.x;
-            }
-
-            if (dY < 0) {
-                minY = startPoint.y + round(dY);
-                dY = -dY;
-            } else {
-                minY = startPoint.y;
-            }
-            rootDiagramObject.collect(minX, minY, minX + round(dX), minY + round(dY), selection.collector);
-        }
-    }
-
 
     /**
      * Possible states during mouse moving.
      */
-    private enum State {
+    public enum State {
         SELECTING, LASSO, DRAGGING
     };
 
@@ -1081,174 +1030,217 @@ public class DiagramPanel extends JPanel {
     /**
      * Incapsulates objects selection functionality.
      */
-    private class SelectionManager {
 
-        private final ArrayList<DiagramObject> items = new ArrayList<DiagramObject>();
+public class SelectionManager {
 
-        private final Consumer<DiagramObject> collector = (item) -> {
-            if (!items.contains(item))
-                items.add(item);
-        };
+    private final ArrayList<DiagramObject> items = new ArrayList<DiagramObject>();
 
-        private DiagramObject nonMoveable;
-        private State state = State.SELECTING;
+    private final Consumer<DiagramObject> collector = (item) -> {
+        if (!items.contains(item))
+            items.add(item);
+    };
 
-        private List<DiagramObject> getItems() {
-            return Collections.unmodifiableList(items);
-        }
+    private DiagramObject nonMoveable;
+    private DiagramPanel.State state = DiagramPanel.State.SELECTING;
 
-        private void clear() {
-            items.clear();
-        }
+    private List<DiagramObject> getItems() {
+        return Collections.unmodifiableList(items);
+    }
 
-        //клик на холст
+    private void clear() {
+        items.clear();
+    }
 
-        void mouseDown(DiagramObject item, boolean shiftKey) {
-            /*
-             * Эта строчка ничего не отрисовывает, но нужна для того, чтобы
-             * снабдить лассо правильным Canvas'ом
-             */
-            lasso.draw(canvas.getGraphics(), 0, 0, scale);
-            /*
-             * Если по какой-либо причине событие MouseUp не наступило,
-             * искусственно вызываем его, чтобы избежать ошибок
-             */
-            if (state != State.SELECTING)
-                mouseUp(0, 0);
+    //клик на холст
+
+    void mouseDown(DiagramObject item, boolean shiftKey) {
+        /*
+         * Эта строчка ничего не отрисовывает, но нужна для того, чтобы
+         * снабдить лассо правильным Canvas'ом
+         */
+        lasso.draw(canvas.getGraphics(), 0, 0, scale);
+        /*
+         * Если по какой-либо причине событие MouseUp не наступило,
+         * искусственно вызываем его, чтобы избежать ошибок
+         */
+        if (state != DiagramPanel.State.SELECTING)
+            mouseUp(0, 0);
 
 
-            assert state == State.SELECTING;
+        assert state == DiagramPanel.State.SELECTING;
 
-            int i = items.indexOf(item);
+        int i = items.indexOf(item);
 
-            /*
-             * Режим без Ctrl, Shift: - если ткнули в выделенный объект, то
-             * делаем его первым в списке выделенных - если мы ткнули в пустое
-             * место, то просто сбрасываем выделение, - если ткнули в
-             * невыделенный объект, то сбрасываем выделение и выделяем кликнутый
-             * объект.
-             */
+        /*
+         * Режим без Ctrl, Shift: - если ткнули в выделенный объект, то
+         * делаем его первым в списке выделенных - если мы ткнули в пустое
+         * место, то просто сбрасываем выделение, - если ткнули в
+         * невыделенный объект, то сбрасываем выделение и выделяем кликнутый
+         * объект.
+         */
 
-            if (!shiftKey) {
-                if (i >= 0) {
-                    Collections.swap(items, i, 0);
-                } else {
-                    items.clear();
-                    if (item != null)
-                        items.add(item);
-                }
-
+        if (!shiftKey) {
+            if (i >= 0) {
+                Collections.swap(items, i, 0);
             } else {
-                /*
-                 * Режим с Ctrl, Shift: - если ткнули в выделенный объект, то
-                 * удаляем его из выделения - если ткнули в невыделенный объект,
-                 * то добавлем его к выделению и делаем первым
-                 */
-                if (i >= 0)
-                    items.remove(i);
-                else if (item != null) {
+                items.clear();
+                if (item != null)
                     items.add(item);
-                    Collections.swap(items, 0, items.size() - 1);
-                }
             }
+
+        } else {
+            /*
+             * Режим с Ctrl, Shift: - если ткнули в выделенный объект, то
+             * удаляем его из выделения - если ткнули в невыделенный объект,
+             * то добавлем его к выделению и делаем первым
+             */
+            if (i >= 0)
+                items.remove(i);
+            else if (item != null) {
+                items.add(item);
+                Collections.swap(items, 0, items.size() - 1);
+            }
+        }
+
+        /*
+         * Если ткнули в пустое место --- переходим к построению лассо
+         */
+        if (item == null) {
+            state = DiagramPanel.State.LASSO;
+            nonMoveable = null;
+        } else if (!item.isMoveable()) {
 
             /*
-             * Если ткнули в пустое место --- переходим к построению лассо
+             * Иначе, если ткнули в неподвижный объект --- переходим к
+             * построению лассо
              */
-            if (item == null) {
-                state = State.LASSO;
-                nonMoveable = null;
-            } else if (!item.isMoveable()) {
 
-                /*
-                 * Иначе, если ткнули в неподвижный объект --- переходим к
-                 * построению лассо
-                 */
+            state = DiagramPanel.State.LASSO;
+            nonMoveable = item;
 
-                state = State.LASSO;
-                nonMoveable = item;
-
-            } else {
-                /*
-                 * Иначе --- переходим к перемещению выделенных объектов
-                 */
-                state = State.DRAGGING;
-            }
-
-
+        } else {
+            /*
+             * Иначе --- переходим к перемещению выделенных объектов
+             */
+            state = DiagramPanel.State.DRAGGING;
         }
 
-        void mouseMove(int dX, int dY) {
-            switch (state) {
-                // Режим отрисовки лассо
-                case LASSO:
-                    /*
-                     * Эта строчка ничего не отрисовывает, но нужна для того, чтобы
-                     * снабдить лассо правильным Canvas'ом
-                     */
-                    lasso.draw(canvas.getGraphics(), 0, 0, scale);
-                    lasso.drawSelection(/* canvas.getGraphics(), */ dX, dY);
-                    break;
-                // Режим передвижения объектов
-                default:
-                    for (DiagramObject i : items) {
-                        assert i != null;
-                        i.drawSelection(/* canvas.getGraphics(), */ dX, dY);
-                    }
-            }
-        }
 
-        private void internalDrop(int dX, int dY) {
-            if ((!items.isEmpty()) && ((dX != 0) || (dY != 0))) {
+    }
 
+    void mouseMove(int dX, int dY) {
+        switch (state) {
+            // Режим отрисовки лассо
+            case LASSO:
+                /*
+                 * Эта строчка ничего не отрисовывает, но нужна для того, чтобы
+                 * снабдить лассо правильным Canvas'ом
+                 */
+                lasso.draw(canvas.getGraphics(), 0, 0, scale);
+                lasso.drawSelection(/* canvas.getGraphics(), */ dX, dY);
+                break;
+            // Режим передвижения объектов
+            default:
                 for (DiagramObject i : items) {
-                    DiagramObject curItem = i.getParent();
-                    while (curItem != null && !items.contains(curItem)) {
-                        curItem = curItem.getParent();
+                    assert i != null;
+                    i.drawSelection(/* canvas.getGraphics(), */ dX, dY);
+                }
+        }
+    }
 
-                    }
-                    if (curItem == null)
-                        i.drop(dX, dY);
+    private void internalDrop(int dX, int dY) {
+        if ((!items.isEmpty()) && ((dX != 0) || (dY != 0))) {
+
+            for (DiagramObject i : items) {
+                DiagramObject curItem = i.getParent();
+                while (curItem != null && !items.contains(curItem)) {
+                    curItem = curItem.getParent();
 
                 }
+                if (curItem == null)
+                    i.drop(dX, dY);
 
             }
-
-
-        }
-
-        void mouseUp(int dX, int dY) {
-            switch (state) {
-                case LASSO:
-                    if ((dX != 0) || (dY != 0)) {
-                        items.remove(nonMoveable);
-                        nonMoveable = null;
-                    }
-                    lasso.drop(dX, dY);
-                    break;
-                case DRAGGING:
-
-                    internalDrop(dX, dY);
-                    canvas.paint(canvas.getGraphics());
-                    break;
-                default:
-                    break;
-            }
-            state = State.SELECTING;
 
         }
 
 
     }
 
+    void mouseUp(int dX, int dY) {
+        switch (state) {
+            case LASSO:
+                if ((dX != 0) || (dY != 0)) {
+                    items.remove(nonMoveable);
+                    nonMoveable = null;
+                }
+                lasso.drop(dX, dY);
+                break;
+            case DRAGGING:
 
-    /**
-     * Diagram painting canvas.
-     */
+                internalDrop(dX, dY);
+                canvas.paint(canvas.getGraphics());
+                break;
+            default:
+                break;
+        }
+        state = DiagramPanel.State.SELECTING;
+
+    }
 
 
+}
 
-    private class DiagramCanvas extends Canvas{
+    public class Lasso extends DiagramObject {
+    @Override
+    protected void internalDrawSelection(int dX, int dY) {
+
+        getCanvas().setColor(Color.GREEN);
+        getCanvas().setXORMode(Color.WHITE);
+
+        Graphics2D g2 = (Graphics2D) getCanvas();
+
+        float dash1[] = { 5.0f };
+        BasicStroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 5.0f, dash1, 0.0f);
+        Stroke s = g2.getStroke();
+        g2.setStroke(dashed);
+
+        int x0 = dX > 0 ? startPoint.x : startPoint.x + dX;
+        int y0 = dY > 0 ? startPoint.y : startPoint.y + dY;
+
+        g2.drawRect(x0, y0, Math.abs(dX), Math.abs(dY));
+        g2.setStroke(s);
+
+        getCanvas().setPaintMode();
+    }
+
+    @Override
+    protected void internalDrop(double dX, double dY) {
+        int minX;
+        int minY;
+
+        dX = dX * scale;
+        dY = dY * scale;
+
+        if (dX < 0) {
+            minX = startPoint.x + round(dX);
+            dX = -dX;
+        } else {
+            minX = startPoint.x;
+        }
+
+        if (dY < 0) {
+            minY = startPoint.y + round(dY);
+            dY = -dY;
+        } else {
+            minY = startPoint.y;
+        }
+        rootDiagramObject.collect(minX, minY, minX + round(dX), minY + round(dY), selection.collector);
+    }
+}
+
+
+    public class DiagramCanvas extends Canvas{
 
         private static final long serialVersionUID = 1L;
 
