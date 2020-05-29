@@ -50,7 +50,7 @@ public class DiagramPanel extends JPanel {
     private double scale = 1.0;
     private boolean panningMode;
     private boolean mouseDown;
-    private Class creatingBlock = null;
+    public Class creatingBlock = null;
 
     public static boolean creatingLink = false;
     public static boolean creatingIn = false;
@@ -392,7 +392,23 @@ public class DiagramPanel extends JPanel {
                 filename = jFileChooser.getSelectedFile().getName();
                 dir = jFileChooser.getCurrentDirectory().toString();
                 filePath = dir + "\\" + filename;
-                openJSONfile(filePath);
+                try {
+                    openJSONfile(filePath);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                } catch (ClassNotFoundException e1) {
+                    e1.printStackTrace();
+                } catch (NoSuchMethodException e1) {
+                    e1.printStackTrace();
+                } catch (IllegalAccessException e1) {
+                    e1.printStackTrace();
+                } catch (InvocationTargetException e1) {
+                    e1.printStackTrace();
+                } catch (InstantiationException e1) {
+                    e1.printStackTrace();
+                } catch (ParseException e1) {
+                    e1.printStackTrace();
+                }
             }
         });
 
@@ -557,7 +573,13 @@ public class DiagramPanel extends JPanel {
     }
 
     public void saveFile (){
-            JSONObject jsonFile = createJSON();
+
+        if(rootDiagramObject.getFirstSubObj()==null){
+            JOptionPane.showMessageDialog(new Frame(), "Нельзя сохранить пустой файл", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JSONObject jsonFile = createJSON();
             JFileChooser jFileChooser = new JFileChooser("C:\\Users\\L\\Documents\\Schemes\\");
 
             jFileChooser.setFileFilter(new FileFilter() {
@@ -586,9 +608,9 @@ public class DiagramPanel extends JPanel {
                 }
 
             } catch (InvalidPathException ex) {
-                JOptionPane.showMessageDialog(new Frame(), "Введите корректное имя файла", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(new Frame(), "Введите корректный путь для сохранения файла", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(new Frame(), "Невозможно сохранить файл", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(new Frame(), "Невозможно сохранить файл с таким именем", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
             }
     }
 
@@ -597,7 +619,8 @@ public class DiagramPanel extends JPanel {
     public JSONObject createJSON() {
        DiagramObject currentObject = rootDiagramObject.getFirstSubObj();
 
-       JSONArray blockArray = new JSONArray();
+
+        JSONArray blockArray = new JSONArray();
        JSONArray linkArray = new JSONArray();
 
        while(currentObject!=rootDiagramObject.getLastSubObj()){
@@ -621,7 +644,6 @@ public class DiagramPanel extends JPanel {
        }
 
        catch (NullPointerException e){
-           JOptionPane.showMessageDialog(new Frame(), "Нельзя сохранить пустой файл", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
            return null;
        }
 
@@ -629,11 +651,11 @@ public class DiagramPanel extends JPanel {
 
     //парсинг файла JSON
 
-    public void openJSONfile(String filepath){
+    public void openJSONfile(String filepath) throws IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, ParseException {
         JSONParser jsonParser = new JSONParser();
+     //   try {
+        FileReader reader = new FileReader(filepath);
 
-        try (FileReader reader = new FileReader(filepath))
-        {
             //Read JSON file
             Object obj = jsonParser.parse(reader);
             JSONObject jsonObject = (JSONObject) obj;
@@ -678,7 +700,7 @@ public class DiagramPanel extends JPanel {
             selection.clear();
             canvas.repaint();
 
-        } catch (FileNotFoundException e) {
+   /*     } catch (FileNotFoundException e) {
             JOptionPane.showMessageDialog(new Frame(), "Выбранный файл не существует или был удалён", "Ошибка", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(new Frame(), "Файл повреждён или несовместим с данным программным обеспечением", "Ошибка", JOptionPane.ERROR_MESSAGE);
@@ -694,8 +716,10 @@ public class DiagramPanel extends JPanel {
             JOptionPane.showMessageDialog(new Frame(), "Файл повреждён или несовместим с данным программным обеспечением", "Ошибка", JOptionPane.ERROR_MESSAGE);
         } catch (InvocationTargetException e) {
             JOptionPane.showMessageDialog(new Frame(), "Файл повреждён или несовместим с данным программным обеспечением", "Ошибка", JOptionPane.ERROR_MESSAGE);
-        }
+        }*/
     }
+
+
 
 
     public DiagramCanvas getCanvas(){

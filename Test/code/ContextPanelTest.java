@@ -12,6 +12,8 @@ import static org.junit.Assert.*;
 
 public class ContextPanelTest {
 
+
+    DiagramPanel diagramPanel;
     Canvas canvas = new Canvas();
     DiagramRectangle rectangle1 = new DiagramRectangle(50, 100, "Caption");
     DiagramRectangle rectangle2 = new DiagramRectangle(50, 100, "Caption");
@@ -24,13 +26,9 @@ public class ContextPanelTest {
     DiagramGeneralization diagramGeneralization5;
     DiagramGeneralization diagramGeneralization6;
 
-    DiagramPanel diagramPanel;
-    ArrayList<DiagramGeneralization> lines;
-    LinesTableModel linesTableModel;
-    ContextPanel contextPanel;
 
-    TextField textFieldX;
-    TextField textFieldY;
+    ArrayList<DiagramGeneralization> lines;
+    ContextPanel contextPanel;
 
     @Before
     public void setUp() throws Exception {
