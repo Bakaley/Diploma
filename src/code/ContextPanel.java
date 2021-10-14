@@ -15,9 +15,12 @@ public class ContextPanel extends JPanel {
     private ArrayList<DiagramGeneralization> lines;
     private TextField textFieldX;
     private TextField textFieldY;
-    private TextField textFieldExpression;
+    private TextArea textFieldExpression;
     private Canvas canvas;
     private ContextFrame frame;
+
+    JButton jButton_clear_lines = new JButton();
+    JToggleButton jButton_add_line_out = new JToggleButton();
 
     private int oldX;
     private int oldY;
@@ -30,6 +33,7 @@ public class ContextPanel extends JPanel {
         return textFieldY;
     }
 
+    JScrollPane tablePanel;
     JTable table;
 
     public ContextPanel(AbstractDiagramNode nodeIn, Canvas canvasIn, ContextFrame frameIn) {
@@ -46,14 +50,16 @@ public class ContextPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         JButton jcomp3 = new JButton("Цвет рамки");
+        jcomp3.setAlignmentX(Component.CENTER_ALIGNMENT);
         JButton jcomp4 = new JButton("Цвет текста");
+        jcomp4.setAlignmentX(Component.CENTER_ALIGNMENT);
         JButton jcomp5 = new JButton("Цвет заливки");
-
+        jcomp5.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         textFieldX = new TextField(String.valueOf((int)node.getmX()));
         textFieldY = new TextField(String.valueOf((int)node.getmY()));
-        textFieldExpression = new TextField(node.getCaption());
-        textFieldExpression.setPreferredSize(new Dimension(100, 20));
+        textFieldExpression = new TextArea(node.getClearCaption(),4, 20);
+        textFieldExpression.setPreferredSize(new Dimension(150, 20));
 
         Label labelX = new Label("X: ");
         Label labelY = new Label("Y: ");
@@ -72,10 +78,8 @@ public class ContextPanel extends JPanel {
         jPanelExpression.add(labelExpression);
         jPanelExpression.add(textFieldExpression);
 
-
         jcomp3.addActionListener(e -> {
             Color initialcolor = Color.RED;
-
             Color color = new JColorChooser().showDialog(frame, "Выберите цвет", initialcolor);
             node.setColorBorder(color);
             canvas.repaint();
@@ -149,7 +153,6 @@ public class ContextPanel extends JPanel {
 
         lines = node.get_lines_in();
         lines.addAll(node.get_lines_out());
-
         if (node.getClass().getName().contains("Terminator")) textFieldExpression.setEditable(false);
 
         JPanel jpanelbutton3 = new JPanel();
@@ -165,64 +168,100 @@ public class ContextPanel extends JPanel {
         jpanelbutton5.add(jcomp5);
 
         JPanel jpanelLinks = new JPanel();
+        jpanelLinks.setLayout(new FlowLayout());
 
         TableModel model = new LinesTableModel(lines, node);
         table = new JTable(model);
 
-        JButton jButton_add_line_in = new JButton();
-        jButton_add_line_in.addActionListener(e ->{
-            DiagramPanel.creatingLink = true;
-            DiagramPanel.creatingIn = false;
-        });
-        jButton_add_line_in.setIcon(new ImageIcon(AppStart.class.getResource("/resources/line_in.png")));
 
-        JButton jButton_add_line_out = new JButton();
         jButton_add_line_out.addActionListener( e-> {
             DiagramPanel.creatingLink = true;
-            DiagramPanel.creatingIn = true;
-        });
+            DiagramPanel.creatingFromContextNode = true;
+            jButton_add_line_out.setSelected(true);
 
+        });
         jButton_add_line_out.setIcon(new ImageIcon(AppStart.class.getResource("/resources/line_out.png")));
+
+        jpanelLinks.add(jButton_add_line_out);
+        if((!node.getClass().equals(DiagramRhombus.class) && node.get_lines_out().size() > 0) || node.getClass().equals(DiagramTerminatorEnd.class)){
+            jButton_add_line_out.setEnabled(false);
+            jButton_add_line_out.setToolTipText("Этот блок не может иметь больше исходящих связей");
+        }
+        else if(node.getClass().equals(DiagramRhombus.class) && node.get_lines_out().size() > 1){
+            jButton_add_line_out.setEnabled(false);
+            jButton_add_line_out.setToolTipText("Этот блок не может иметь больше исходящих связей");
+        }
+        else jButton_add_line_out.setToolTipText("Создать исходящую из этого блока связь");
+
+        JToggleButton jButton_add_line_in = new JToggleButton();
+        jButton_add_line_in.addActionListener(e ->{
+            DiagramPanel.creatingLink = true;
+            DiagramPanel.creatingFromContextNode = false;
+            jButton_add_line_in.setSelected(true);
+
+        });
+        jButton_add_line_in.setIcon(new ImageIcon(AppStart.class.getResource("/resources/line_in.png")));
+        jpanelLinks.add(jButton_add_line_in);
+        if(node.getClass().equals(DiagramTerminatorStart.class)){
+            jButton_add_line_in.setEnabled(false);
+            jButton_add_line_in.setToolTipText("Этот блок не может иметь входящих связей");
+        }
+        else jButton_add_line_in.setToolTipText("Создать входяющую в этот блок связь");
+
 
         JButton jButton_delete_lines = new JButton();
         jButton_delete_lines.addActionListener(e->{
             int[] linesToDelete = table.getSelectedRows();
             deleteLines(linesToDelete);
         });
+        table.getSelectionModel().addListSelectionListener(e-> {
+            if(table.getSelectedRows().length !=0) jButton_delete_lines.setEnabled(true);
+            else{
+                jButton_delete_lines.setEnabled(false);
+            }
+        });
         jButton_delete_lines.setIcon(new ImageIcon(AppStart.class.getResource("/resources/cross.png")));
+        jButton_delete_lines.setEnabled(false);
+        jButton_delete_lines.setToolTipText("Удалить выбранные связи");
 
-        JButton jButton_clear_lines = new JButton();
         jButton_clear_lines.addActionListener(e->{
             deleteLines();
         });
+
+        table.getModel().addTableModelListener(e->{
+            if(node.get_lines_out().size() + node.get_lines_out().size() == 0) jButton_clear_lines.setEnabled(false);
+            else jButton_clear_lines.setEnabled(true);
+        });
         jButton_clear_lines.setIcon(new ImageIcon(AppStart.class.getResource("/resources/clear_lines.png")));
+        if(lines.size() == 0) jButton_clear_lines.setEnabled(false);
+        jButton_clear_lines.setToolTipText("Удалить все связи");
 
         JButton jButton_delete_block = new JButton();
         jButton_delete_block.addActionListener( e-> {
             deleteBlock();
         });
         jButton_delete_block.setIcon(new ImageIcon(AppStart.class.getResource("/resources/delete.png")));
+        jButton_delete_block.setToolTipText("Удалить блок вместе со всеми его связями");
 
-        jpanelLinks.setLayout(new FlowLayout());
-        jpanelLinks.add(jButton_add_line_out);
-        jpanelLinks.add(jButton_add_line_in);
+
+
         jpanelLinks.add(jButton_delete_lines);
         jpanelLinks.add(jButton_clear_lines);
         jpanelLinks.add(jButton_delete_block);
 
         add(Box.createRigidArea(new Dimension(0, 25)));
         add(jPanelCoordinates);
-        add(Box.createRigidArea(new Dimension(0, 25)));
+        add(Box.createRigidArea(new Dimension(0, 10)));
         add(jPanelExpression);
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(jcomp3);
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(jcomp4);
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(jcomp5);
         add(Box.createRigidArea(new Dimension(0, 25)));
-        add(jpanelbutton3);
-        add(Box.createRigidArea(new Dimension(0, 25)));
-        add(jpanelbutton4);
-        add(Box.createRigidArea(new Dimension(0, 25)));
-        add(jpanelbutton5);
-        add(Box.createRigidArea(new Dimension(0, 25)));
-
-        add(new JScrollPane(table));
+        tablePanel = new JScrollPane(table);
+        add(tablePanel);
         add(Box.createRigidArea(new Dimension(0, 0)));
         add(jpanelLinks);
     }
@@ -235,10 +274,12 @@ public class ContextPanel extends JPanel {
             link.removeFromQueue();
             ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.remove(link.getId());
         }
+        lines = node.get_lines_in();
+        lines.addAll(node.get_lines_out());
+        table.setModel(new LinesTableModel(lines, node));
+        jButton_clear_lines.setEnabled(false);
+        if(!(node.getClass().equals(DiagramTerminatorEnd.class))) jButton_add_line_out.setEnabled(true);
         canvas.repaint();
-        DiagramPanel.contextFrame.dispose();
-        new ContextFrame("Свойства " + node.getCaption(), node, canvas);
-
     }
 
 
@@ -247,11 +288,15 @@ public class ContextPanel extends JPanel {
             lines.get(i).removeFromQueue();
             ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.remove(lines.get(i).getId());
         }
-
+        lines = node.get_lines_in();
+        lines.addAll(node.get_lines_out());
+        table.setModel(new LinesTableModel(lines, node));
+        if(lines.size() == 0) jButton_clear_lines.setEnabled(false);
+        else jButton_clear_lines.setEnabled(true);
+        if(!(node.getClass().equals(DiagramRhombus.class)) && node.get_lines_out().size() == 0){
+            if(!(node.getClass().equals(DiagramTerminatorEnd.class))) jButton_add_line_out.setEnabled(true);
+        }
         canvas.repaint();
-
-        DiagramPanel.contextFrame.dispose();
-        new ContextFrame("Свойства " + node.getCaption(), node, canvas);
     }
 
     public HashMap<Integer, DiagramObject> deleteBlock(){

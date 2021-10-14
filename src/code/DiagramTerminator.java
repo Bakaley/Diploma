@@ -9,7 +9,7 @@ import java.awt.Graphics;
  */
 class DiagramTerminator extends AbstractDiagramNode {
 
-    protected static double HEIGHT = 2 * SIZE_SCALE *  FONTSIZEPT;
+    protected static double HEIGHT = SIZE_SCALE * 3 * FONTSIZEPT;
 
     public DiagramTerminator(double i, double j, String string) {
         super(i, j, string);
@@ -38,7 +38,7 @@ class DiagramTerminator extends AbstractDiagramNode {
                 scaleY(mY - HEIGHT / 2)+1,
                 scale(WIDTH),
                 scale(HEIGHT),
-                scale(20),
+                scale(40),
                 scale(90));
 
         getCanvas().setColor(colorBorder);
@@ -46,14 +46,13 @@ class DiagramTerminator extends AbstractDiagramNode {
                 scaleY(mY - HEIGHT / 2),
                 scale(WIDTH),
                 scale(HEIGHT),
-                scale(20),
+                scale(40),
                 scale(90));
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
-        FontMetrics metrics = getCanvas().getFontMetrics();
-        shift = metrics.stringWidth(getCaption());
+
         getCanvas().setColor(colorFont);
-        getCanvas().drawString(getCaption(), (int)(scaleX(mX)-shift/2) , scaleY(mY + 0.5 * (FONTSIZEPT)));
+        drawText();
 
     }
 

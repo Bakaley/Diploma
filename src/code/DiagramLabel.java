@@ -25,20 +25,23 @@ public class DiagramLabel extends DiagramObject {
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
         FontMetrics metrics = getCanvas().getFontMetrics();
         width = metrics.stringWidth(object.getText());
-        getCanvas().drawString(object.getText(), scaleX(object.getLabelX()), scaleY(object.getLabelY()));
+        getCanvas().drawString(caption, scaleX(object.getLabelX()), scaleY(object.getLabelY()) - scaleY(FONTSIZEPT/2));
     }
 
     @Override
     protected boolean internalTestHit(double x, double y) {
+        return false;
+        /*
         double dX = x - getMinX();
         double dY = getMinY() - y;
-        return dX >= 0 && dY >= 0 && dX <= width / getScale() && dY <= FONTSIZEPT;
+        return dX >= 0 && dY >= 0 && dX <= width / getScale() && dY <= FONTSIZEPT;*/
     }
 
     @Override
     protected void internalDrop(double dX, double dY) {
-        object.setLabelX(object.getLabelX() + dX);
-        object.setLabelY(object.getLabelY() + dY);
+        return;
+        /*object.setLabelX(object.getLabelX() + dX);
+        object.setLabelY(object.getLabelY() + dY);*/
     }
 
     @Override
@@ -65,4 +68,8 @@ public class DiagramLabel extends DiagramObject {
         return object;
     }
 
+    @Override
+    public boolean isCollectable() {
+        return false;
+    }
 }

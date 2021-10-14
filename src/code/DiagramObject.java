@@ -29,7 +29,12 @@ public abstract class DiagramObject {
     private Color colorFill = Color.cyan;
 
 
-    public String caption;
+    protected String caption;
+
+    public String getName(){
+        if(caption.isEmpty()) return getCaption();
+        else return caption.split("\r\n")[0];
+    }
 
     private Graphics canvas;
     private double scale;
@@ -180,7 +185,7 @@ public abstract class DiagramObject {
      *
      */
     protected void internalDraw() {
-        // Ничего не делает на уровне DrawObject
+        // Ничего не делает на уровне DiagramObject
     }
 
 
@@ -401,9 +406,6 @@ public abstract class DiagramObject {
 
         }
     }
-
-
-
 
     public Graphics getCanvas() {
         return canvas;

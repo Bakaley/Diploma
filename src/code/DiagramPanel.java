@@ -13,6 +13,7 @@ import java.util.Iterator;
 
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.filechooser.FileFilter;
 
@@ -53,27 +54,30 @@ public class DiagramPanel extends JPanel {
     public Class creatingBlock = null;
 
     public static boolean creatingLink = false;
-    public static boolean creatingIn = false;
+    public static boolean creatingFromContextNode = false;
+
+    public static final JToggleButton termButtonStart = new JToggleButton();
+    public static final JToggleButton termButtonEnd = new JToggleButton();
 
 
-
-    private JToggleButton pressed = null;
+    private static JToggleButton pressed = null;
 
     public static ContextFrame contextFrame = null;
 
 
     private final SelectionManager selection = new SelectionManager();
     private final DiagramObject lasso = new Lasso();
+    private final DiagramObject strokeLine = new StrokeLine();
+
+    Label labelExpression;
 
     public DiagramPanel() {
         setLayout(new BorderLayout(0, 0));
-
         canvas = new DiagramCanvas();
 
         canvas.addMouseWheelListener((MouseWheelEvent e) -> {
             canvasMouseWheel(e);
         });
-
         canvas.addMouseListener(new MouseAdapter() {
 
             @Override
@@ -81,151 +85,73 @@ public class DiagramPanel extends JPanel {
                 canvasMouseDown(e);
             }
 
-
             @Override
             public void mouseReleased(MouseEvent e) {
                 canvasMouseUp(e);
             }
-
         });
 
         canvas.addMouseMotionListener(new MouseAdapter() {
-
             @Override
             public void mouseDragged(MouseEvent e) {
                 canvasMouseDragged(e);
             }
-
             @Override
             public void mouseMoved(MouseEvent e) {
                 canvasMouseMoved(e);
             }
-
         });
 
         canvas.setBackground(Color.WHITE);
         add(canvas, BorderLayout.CENTER);
-
 
         vsb = new JScrollBar();
         vsb.getModel().addChangeListener((ChangeEvent changeEvent) -> {
             scrollBarChange();
         });
 
-
-
-        add(vsb, BorderLayout.EAST);
-
-        JPanel southPanel = new JPanel();
-        add(southPanel, BorderLayout.SOUTH);
-        southPanel.setLayout(new BorderLayout(0, 0));
-
         hsb = new JScrollBar();
         hsb.getModel().addChangeListener((ChangeEvent changeEvent) -> {
             scrollBarChange();
         });
-
+        add(vsb, BorderLayout.EAST);
         hsb.setOrientation(JScrollBar.HORIZONTAL);
-        southPanel.add(hsb, BorderLayout.CENTER);
-
-        Component hstrut = Box.createHorizontalStrut(STRUT_WIDTH);
-        southPanel.add(hstrut, BorderLayout.EAST);
+        add(hsb, BorderLayout.SOUTH);
 
         JPanel northPanel = new JPanel();
-        FlowLayout flowLayout = (FlowLayout) northPanel.getLayout();
-        flowLayout.setAlignment(FlowLayout.LEFT);
+        JPanel northLeftPanel = new JPanel();
+        JPanel northRightPanel = new JPanel();
+
         add(northPanel, BorderLayout.NORTH);
-
-
-        //панель выбора блоков
-        JPanel westPanel = new JPanel();
-        westPanel.setLayout(new BoxLayout(westPanel, BoxLayout.Y_AXIS));
-        add(westPanel, BorderLayout.WEST);
-
-        westPanel.add(Box.createVerticalStrut(15));
-
-        JFrame frame = new JFrame("frame");
-        //кнопки выбора блоков
+        northPanel.setLayout(new BorderLayout());
+        northPanel.add(northLeftPanel, BorderLayout.WEST);
+        northPanel.add(northRightPanel, BorderLayout.EAST);
 
         //терминатор начала
-        JToggleButton termButtonStart = new JToggleButton();
         termButtonStart.addActionListener((ActionEvent e) -> {
-
-            HashMap <Integer, DiagramObject> objects =  ((Scheme)getDiagramObject()).diagramObjects;
-            Iterator<DiagramObject> iterator = objects.values().iterator();
-            boolean exists = false;
-            while (iterator.hasNext()){
-                DiagramObject object = iterator.next();
-                if(object.getClass().getName().equals("code.DiagramTerminatorStart")) {
-                    exists = true;
-                }
-            }
-
-            if(exists){
-                JOptionPane.showMessageDialog(frame, "Нельзя создать больше одного блока начала");
-                termButtonStart.setSelected(false);
-                pressed.setSelected(false);
-                creatingBlock = null;
-            }
-            else {
-                if (creatingBlock != null) {
-                    if (pressed == termButtonStart) {
-                        pressed.setSelected(false);
-                        pressed = null;
-                        creatingBlock = null;
-                    } else {
-                        pressed.setSelected(false);
-                        creatingBlock = DiagramTerminatorStart.class;
-                        pressed = termButtonStart;
-                        pressed.setSelected(true);
-                    }
+            if (creatingBlock != null) {
+                if (pressed == termButtonStart) {
+                    pressed.setSelected(false);
+                    pressed = null;
+                    creatingBlock = null;
                 } else {
-
+                    pressed.setSelected(false);
                     creatingBlock = DiagramTerminatorStart.class;
                     pressed = termButtonStart;
                     pressed.setSelected(true);
                 }
+            } else {
+                creatingBlock = DiagramTerminatorStart.class;
+                pressed = termButtonStart;
+                pressed.setSelected(true);
             }
-
-
-
-
-
-
-
         });
 
         termButtonStart.setIcon(new ImageIcon(AppStart.class.getResource("/resources/4.png")));
-        westPanel.add(termButtonStart);
-        westPanel.add(Box.createRigidArea(new Dimension(20, 15)));
 
 
 
-        //прямоугольник
-        JToggleButton rectButton = new JToggleButton();
-        rectButton.addActionListener((ActionEvent e) -> {
-            if(creatingBlock != null){
-                if(pressed == rectButton){
-                    creatingBlock = null;
-                    pressed.setSelected(false);
-                    pressed = null;
-                }
-                else {
-                    creatingBlock = DiagramRectangle.class;
-                    pressed.setSelected(false);
-                    pressed = rectButton;
-                }
-            }
-            else {
-                creatingBlock = DiagramRectangle.class;
-                pressed = rectButton;
-            }
-
-        });
-
-        rectButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/1.png")));
-        westPanel.add(Box.createRigidArea(new Dimension(20, 0)));
-        westPanel.add(rectButton);
+        System.out.println(termButtonStart.getMinimumSize().toString());
 
         //парараллелограмм
         JToggleButton parallelButton = new JToggleButton();
@@ -252,9 +178,32 @@ public class DiagramPanel extends JPanel {
         });
 
         parallelButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/2.png")));
-        westPanel.add(Box.createRigidArea(new Dimension(20, 15)));
-        westPanel.add(parallelButton);
-        pressed = parallelButton;
+
+
+
+        //прямоугольник
+        JToggleButton rectButton = new JToggleButton();
+        rectButton.addActionListener((ActionEvent e) -> {
+            if(creatingBlock != null){
+                if(pressed == rectButton){
+                    creatingBlock = null;
+                    pressed.setSelected(false);
+                    pressed = null;
+                }
+                else {
+                    creatingBlock = DiagramRectangle.class;
+                    pressed.setSelected(false);
+                    pressed = rectButton;
+                }
+            }
+            else {
+                creatingBlock = DiagramRectangle.class;
+                pressed = rectButton;
+            }
+        });
+        rectButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/1.png")));
+
+
 
         //ромб
         JToggleButton rhombusButton = new JToggleButton();
@@ -278,66 +227,125 @@ public class DiagramPanel extends JPanel {
             }
 
         });
+
         rhombusButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/3.png")));
-        westPanel.add(Box.createRigidArea(new Dimension(20, 15)));
-        westPanel.add(rhombusButton);
-        pressed = rhombusButton;
+
+        //цикл
+        JToggleButton diamondButton = new JToggleButton();
+        diamondButton.addActionListener((ActionEvent e) -> {
+
+            if(creatingBlock != null){
+                if(pressed == diamondButton){
+                    creatingBlock =null;
+                    pressed.setSelected(false);
+                    pressed = null;
+                }
+                else {
+                    creatingBlock = DiagramDiamond.class;
+                    pressed.setSelected(false);
+                    pressed = diamondButton;
+                }
+            }
+            else {
+                creatingBlock = DiagramDiamond.class;
+                pressed = diamondButton;
+            }
+
+        });
+        diamondButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/6.png")));
+
+
+
+        //препроцесс
+        JToggleButton preprocessButton = new JToggleButton();
+        preprocessButton.addActionListener((ActionEvent e) -> {
+
+            if(creatingBlock != null){
+                if(pressed == preprocessButton){
+                    creatingBlock =null;
+                    pressed.setSelected(false);
+                    pressed = null;
+                }
+                else {
+                    creatingBlock = DiagramPreprocess.class;
+                    pressed.setSelected(false);
+                    pressed = preprocessButton;
+                }
+            }
+            else {
+                creatingBlock = DiagramPreprocess.class;
+                pressed = preprocessButton;
+            }
+
+        });
+        preprocessButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/7.png")));
 
 
 
         // терминатор конца
-        JToggleButton termButtonEnd = new JToggleButton();
-        termButtonEnd.addActionListener((ActionEvent e) -> {
-            HashMap <Integer, DiagramObject> objects =  ((Scheme)getDiagramObject()).diagramObjects;
-            Iterator<DiagramObject> iterator = objects.values().iterator();
-            boolean exists = false;
-            while (iterator.hasNext()){
-                DiagramObject node = iterator.next();
-                if(node.getClass().getName().equals("code.DiagramTerminatorEnd")) {
-                    exists = true;
-                }
-            }
 
-            if(exists){
-                JOptionPane.showMessageDialog(frame, "Нельзя создать больше одного блока конца");
-                termButtonEnd.setSelected(false);
-                creatingBlock = null;
-                pressed.setSelected(false);
-            }
-            else {
-                if (creatingBlock != null) {
-                    if (pressed == termButtonEnd) {
-                        creatingBlock = null;
-                        pressed.setSelected(false);
-                        pressed = null;
-                    } else {
-                        pressed.setSelected(false);
-                        creatingBlock = DiagramTerminatorEnd.class;
-                        pressed = termButtonEnd;
-                        pressed.setSelected(true);
-                    }
+        termButtonEnd.addActionListener((ActionEvent e) -> {
+            if (creatingBlock != null) {
+                if (pressed == termButtonEnd) {
+                    creatingBlock = null;
+                    pressed.setSelected(false);
+                    pressed = null;
                 } else {
                     pressed.setSelected(false);
                     creatingBlock = DiagramTerminatorEnd.class;
                     pressed = termButtonEnd;
                     pressed.setSelected(true);
                 }
+            } else {
+                creatingBlock = DiagramTerminatorEnd.class;
+                pressed = termButtonEnd;
+                pressed.setSelected(true);
             }
-
-
-
-
         });
 
         termButtonEnd.setIcon(new ImageIcon(AppStart.class.getResource("/resources/5.png")));
-        westPanel.add(Box.createRigidArea(new Dimension(20, 15)));
-        westPanel.add(termButtonEnd);
 
-        westPanel.add(Box.createHorizontalStrut(20));
+        //панель выбора блоков
+        JPanel westPanel = new JPanel();
+        westPanel.setLayout(new BorderLayout());
+        add(westPanel, BorderLayout.WEST);
 
+        //кнопки выбора блоков
+        JPanel jPanelExpression = new JPanel();
+        labelExpression = new Label("Открытая схема: ");
+        JButton backButton = new JButton("Назад");
+
+        jPanelExpression.setLayout(new FlowLayout());
+        jPanelExpression.add(labelExpression);
+        jPanelExpression.add(backButton);
+
+        JPanel blockPanel = new JPanel();
+        blockPanel.setLayout(new BoxLayout(blockPanel, BoxLayout.Y_AXIS));
+        blockPanel.setBorder(new EmptyBorder(0, 0, 0, 20));
+        blockPanel.add(termButtonStart);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+        blockPanel.add(parallelButton);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+        blockPanel.add(rectButton);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+        blockPanel.add(rhombusButton);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+        blockPanel.add(diamondButton);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+        blockPanel.add(preprocessButton);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+        blockPanel.add(termButtonEnd);
+        blockPanel.add(Box.createRigidArea(new Dimension(20, 15)));
+
+        westPanel.add(blockPanel, BorderLayout.NORTH);
 
         JButton newFile = new JButton();
         newFile.addActionListener((ActionEvent e) -> {
+            if(pressed != null){
+                pressed.setSelected(false);
+                pressed = null;
+                creatingBlock = null;
+            }
             if(rootDiagramObject.getFirstSubObj()!=null) {
                 int option = JOptionPane.showConfirmDialog(null, "Желаете сохранить текущий файл? Все несохранённые данные будут утеряны.");
                 switch (option) {
@@ -349,17 +357,23 @@ public class DiagramPanel extends JPanel {
                         saveFile();
                 }
             }
-
-            setDiagramObject(new Scheme(true));
+            Scheme scheme = new Scheme(true);
+            scheme.caption = "New scheme";
+            AppStart.changeWindowTitle(scheme.caption);
+            labelExpression.setText("Открытая схема: " + scheme.caption);
+            setDiagramObject(scheme);
         });
         newFile.setIcon(new ImageIcon(AppStart.class.getResource("/resources/new.png")));
-        northPanel.add(newFile);
-
-
-        //комм
+        northLeftPanel.add(newFile);
 
         JButton openFileButton = new JButton();
+
         openFileButton.addActionListener((ActionEvent e) -> {
+            if(pressed != null) {
+                pressed.setSelected(false);
+                pressed = null;
+                creatingBlock = null;
+            }
             if(rootDiagramObject.getFirstSubObj()!=null) {
                 int option = JOptionPane.showConfirmDialog(null, "Желаете сохранить текущий файл? Все несохранённые данные будут утеряны.");
                 switch (option) {
@@ -371,7 +385,6 @@ public class DiagramPanel extends JPanel {
                         saveFile();
                 }
             }
-
             JFileChooser jFileChooser = new JFileChooser("C:\\Users\\L\\Documents\\Schemes\\");
             jFileChooser.setFileFilter(new FileFilter() {
                 @Override
@@ -379,7 +392,6 @@ public class DiagramPanel extends JPanel {
                     if(f.getName().endsWith("json")) return true;
                     return false;
                 }
-
                 @Override
                 public String getDescription() {
                     return ".json";
@@ -387,13 +399,18 @@ public class DiagramPanel extends JPanel {
             });
 
             String dir, filename, filePath;
-            int rVal = jFileChooser.showOpenDialog(northPanel);
+            int rVal = jFileChooser.showOpenDialog(northLeftPanel);
             if (rVal == JFileChooser.APPROVE_OPTION) {
                 filename = jFileChooser.getSelectedFile().getName();
                 dir = jFileChooser.getCurrentDirectory().toString();
                 filePath = dir + "\\" + filename;
+
                 try {
                     openJSONfile(filePath);
+                    getDiagramObject().caption = filename.split(".json")[0];
+                    AppStart.changeWindowTitle(getDiagramObject().caption);
+                    labelExpression.setText("Открытая схема: " + getDiagramObject().caption);
+
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 } catch (ClassNotFoundException e1) {
@@ -412,28 +429,26 @@ public class DiagramPanel extends JPanel {
             }
         });
 
-
-
         openFileButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/open.png")));
-        northPanel.add(openFileButton);
+        northLeftPanel.add(openFileButton);
 
         JButton saveFileButton = new JButton();
         saveFileButton.addActionListener((ActionEvent e) -> {
             if (rootDiagramObject.getFirstSubObj() != null) {
                 saveFile();
             }
-            else JOptionPane.showMessageDialog(new Frame(), "Нельзя сохранить пустой файл", "Ошибка", JOptionPane.INFORMATION_MESSAGE);
+            else JOptionPane.showMessageDialog(new Frame(), "Нельзя сохранить пустой файл", "Ошибка", JOptionPane.ERROR_MESSAGE);
         });
 
         saveFileButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/save.png")));
-        northPanel.add(saveFileButton);
+        northLeftPanel.add(saveFileButton);
 
         handButton = new JToggleButton();
         handButton.addActionListener((ActionEvent e) -> {
             setPanningMode(true);
         });
         handButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/hand.png")));
-        northPanel.add(handButton);
+        northLeftPanel.add(handButton);
 
         cursorButton = new JToggleButton();
         cursorButton.addActionListener((ActionEvent e) -> {
@@ -441,7 +456,7 @@ public class DiagramPanel extends JPanel {
         });
 
         cursorButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/cursor.png")));
-        northPanel.add(cursorButton);
+        northLeftPanel.add(cursorButton);
 
         setPanningMode(false);
 
@@ -452,8 +467,7 @@ public class DiagramPanel extends JPanel {
         });
 
         plusButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/plus.png")));
-        northPanel.add(plusButton);
-
+        northLeftPanel.add(plusButton);
 
         JButton minusButton = new JButton();
         minusButton.addActionListener((ActionEvent e) -> {
@@ -461,114 +475,120 @@ public class DiagramPanel extends JPanel {
             canvas.paint(canvas.getGraphics());
         });
         minusButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/minus.png")));
-        northPanel.add(minusButton);
+        northLeftPanel.add(minusButton);
 
         JButton one2oneButton = new JButton();
         one2oneButton.addActionListener((ActionEvent e) -> {
             setScale(1.0);
         });
         one2oneButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/1-1.png")));
-        northPanel.add(one2oneButton);
-
-        //создание связь
-
-        JButton linkButton = new JButton();
-        linkButton.addActionListener((ActionEvent e) -> {
-            if (getSelection().size()!=2) JOptionPane.showMessageDialog(frame, "Чтобы создать свзяь между блоками, пожалуйста, выберите ровно два блока");
-            else if (getSelection().size()==2) {
-                AbstractDiagramNode nodeStart = (AbstractDiagramNode) getSelection().get(1);
-                AbstractDiagramNode nodeEnd = (AbstractDiagramNode) getSelection().get(0);
-                if ((nodeStart.getClass().getName().equals("code.DiagramRhombus")&&nodeStart.get_lines_out().size() >= 2)) {
-                        JOptionPane.showMessageDialog(frame, "Блок условия не может иметь более двух исходящих связей");
-                }
-
-                else if (nodeStart.getClass().getName().equals("code.DiagramTerminatorEnd"))
-                        JOptionPane.showMessageDialog(frame, "Блок конца не может иметь исходящих связей");
-
-
-                else if (nodeEnd.getClass().getName().equals("code.DiagramTerminatorStart"))
-                        JOptionPane.showMessageDialog(frame, "Блок начала не может иметь входящих связей");
-
-
-                else if ((!nodeStart.getClass().getName().equals("code.DiagramRhombus") && nodeStart.get_lines_out().size() >=1))
-                    JOptionPane.showMessageDialog(frame, "Этот блок не может иметь более одной исходящих связи");
-
-
-                else {
-                    DiagramGeneralization diagramGeneralization = new DiagramGeneralization(nodeStart, nodeEnd, "");
-                    Set<Integer> keys = ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.keySet();
-                    diagramGeneralization.setId(Collections.max(keys) + 1);
-                    ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.put(((AbstractDiagramLink) diagramGeneralization).getId(), (AbstractDiagramLink) diagramGeneralization);
-                    rootDiagramObject.addToQueue(diagramGeneralization);
-                }
-
-            }
-            selection.clear();
-            canvas.repaint();
-        });
-        linkButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/link.png")));
-       // northPanel.add(linkButton);
-
-
-        //удалить связи
-        JButton delete_link = new JButton();
-        delete_link.addActionListener((ActionEvent e) -> {
-
-            for (DiagramObject diagram_object_in_selection : getSelection()) {
-
-                 ((Scheme)(getDiagramObject())).diagramObjects.forEach((id, diagram_object_in_array) ->
-                {
-                    if((diagram_object_in_array.getClass().getName().equals("code.DiagramGeneralization")))
-                    {
-                        if ((((DiagramGeneralization)diagram_object_in_array).nFrom == diagram_object_in_selection) || (((DiagramGeneralization)diagram_object_in_array).nTo == diagram_object_in_selection)){
-                            diagram_object_in_array.removeFromQueue();
-                            ((Scheme)(getDiagramObject())).diagramObjects.remove(diagram_object_in_array.getId());
-                           }
-                    }
-                });
-
-
-                ((Scheme)(getDiagramObject())).diagramObjects.forEach((id, diagram_object_in_array) ->
-                {
-                    if ((diagram_object_in_selection == diagram_object_in_array)){
-                        diagram_object_in_array.removeFromQueue();
-                        ((Scheme)(getDiagramObject())).diagramObjects.remove(diagram_object_in_array.getId());
-                    }
-                });
-
-
-
-                }
-
-            canvas.paint(canvas.getGraphics());
-        });
-        delete_link.setIcon(new ImageIcon(AppStart.class.getResource("/resources/delete.png")));
-
-
-        //northPanel.add(delete_link);
-        JButton crossButton = new JButton();
-        crossButton.addActionListener((ActionEvent e) -> {
-            canvas.paint(canvas.getGraphics());
-        });
-        crossButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/cross.png")));
-        //northPanel.add(crossButton);
+        northLeftPanel.add(one2oneButton);
 
         JButton checkButton = new JButton();
-        checkButton.addActionListener((ActionEvent e) -> {
-            JOptionPane.showMessageDialog(frame, "Здесь будет реализация проверки схемы, а пока что кнопка создаёт новую заполенную схему");
-            setDiagramObject(new Scheme(false));
-
-        });
+        checkButton.addActionListener((ActionEvent e) ->
+                checkDiagram(new Frame()));
 
         checkButton.setIcon(new ImageIcon(AppStart.class.getResource("/resources/check.png")));
-        northPanel.add(checkButton);
+        northLeftPanel.add(checkButton);
 
         Component horizontalStrut = Box.createHorizontalStrut(STRUT_WIDTH);
-        northPanel.add(horizontalStrut);
+        northLeftPanel.add(horizontalStrut);
 
         hintLabel = new JLabel("");
         hintLabel.setBackground(Color.YELLOW);
-        northPanel.add(hintLabel);
+        northLeftPanel.add(hintLabel);
+
+        northRightPanel.add(jPanelExpression);
+
+    }
+
+    public void checkDiagram(Component parent){
+        ArrayList<DiagramObject> objs = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+
+        //все блоки связаны
+        DiagramTerminatorStart start = ((Scheme)DiagramPanel.getDiagramObject()).getStartTerm() ;
+        if(start == null){
+            JOptionPane.showMessageDialog(parent, "На схеме отсуствтует блок начала", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        DiagramTerminatorEnd end = ((Scheme)DiagramPanel.getDiagramObject()).getEndTerm() ;
+        if(end == null){
+            JOptionPane.showMessageDialog(parent, "На схеме отсутствтует блок конца", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        boolean errorFlag = false;
+        String errorMessage = "В следующие блоки невозможно попасть из блока начала:";
+
+        ArrayList<AbstractDiagramNode> objCopy = (ArrayList<AbstractDiagramNode>) objs.clone();
+        ArrayList<AbstractDiagramNode> chainedNodes = start.getChainedBlocksDown();
+        for (DiagramObject obj: (ArrayList<AbstractDiagramNode>) objs.clone()) {
+            if (obj.getClass().equals(DiagramGeneralization.class)) objCopy.remove(obj);
+        }
+        for (DiagramObject obj: chainedNodes) {
+            if (chainedNodes.contains(obj)) objCopy.remove(obj);
+        }
+        if(objCopy.size() != 0){
+            errorFlag = true;
+            for (DiagramObject node: objCopy) {
+                errorMessage += "\n" + node.getName();
+                ((AbstractDiagramNode)node).errorPaint();
+                canvas.repaint();
+            }
+        }
+        if(errorFlag){
+            JOptionPane.showMessageDialog(parent, errorMessage, "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        errorMessage = "Из следующих блоков невозможность попасть к блоку конца:";
+        for (DiagramObject obj: objs) {
+            if(!obj.getClass().equals(DiagramGeneralization.class)){
+                AbstractDiagramNode node = (AbstractDiagramNode)obj;
+                if(!node.getClass().equals(DiagramTerminatorEnd.class) && node.get_lines_out().size() == 0){
+                    errorFlag = true;
+                    errorMessage += "\n" + node.getName();
+                    ((AbstractDiagramNode)node).errorPaint();
+                    canvas.repaint();
+                }
+            }
+        }
+        if(errorFlag){
+            JOptionPane.showMessageDialog(parent, errorMessage, "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        errorMessage = "Блоки условий должны иметь ровно 2 выхода:";
+        for (DiagramObject obj: objs) {
+            if(!obj.getClass().equals(DiagramGeneralization.class)){
+                AbstractDiagramNode node = (AbstractDiagramNode)obj;
+                if(node.getClass().equals(DiagramRhombus.class) && node.get_lines_out().size() < 2){
+                    errorFlag = true;
+                    errorMessage += "\n" + node.getName();
+                    ((AbstractDiagramNode)node).errorPaint();
+                    canvas.repaint();
+                }
+            }
+        }
+        if(errorFlag){
+            JOptionPane.showMessageDialog(parent, errorMessage, "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        SchemeCompiler schemeCompiler = new SchemeCompiler();
+        try{
+            schemeCompiler.compile(start.getChainedBlocksDown());
+        }
+        catch (SchemeCompiler.SchemeCompilationException e){
+            e.invalidBlock.errorPaint();
+            canvas.repaint();
+            JOptionPane.showMessageDialog(parent, e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(parent, "Схема соответствует всем правилам.", "Сообщение", JOptionPane.INFORMATION_MESSAGE );
+
 
     }
 
@@ -605,6 +625,11 @@ public class DiagramPanel extends JPanel {
                     FileWriter file = new FileWriter(dir + "\\" + (jFileChooser.getSelectedFile().getName()) + ".json");
                     file.write(jsonFile.toJSONString());
                     file.flush();
+
+                    getDiagramObject().caption = jFileChooser.getSelectedFile().getName();
+                    AppStart.changeWindowTitle(getDiagramObject().caption);
+                    labelExpression.setText("Открытая схема: " + getDiagramObject().caption);
+
                 }
 
             } catch (InvalidPathException ex) {
@@ -653,7 +678,7 @@ public class DiagramPanel extends JPanel {
 
     public void openJSONfile(String filepath) throws IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, ParseException {
         JSONParser jsonParser = new JSONParser();
-     //   try {
+        try {
         FileReader reader = new FileReader(filepath);
 
             //Read JSON file
@@ -667,6 +692,7 @@ public class DiagramPanel extends JPanel {
 
             Scheme newRootElement = new Scheme(true);
             newRootElement.diagramObjects.clear();
+            setDiagramObject(newRootElement);
 
             while (blockIterator.hasNext()) {
                 JSONObject currentObject = (JSONObject) blockIterator.next();
@@ -675,32 +701,36 @@ public class DiagramPanel extends JPanel {
                 Constructor <?> constructor = aClass.getConstructor(double.class, double.class, String.class);
                 Object object = constructor.newInstance(Double.valueOf(currentObject.get("x").toString()), Double.valueOf(currentObject.get("y").toString()), currentObject.get("text").toString());
                 ((AbstractDiagramNode)object).setId(((Long)(currentObject.get("id"))).intValue());
+                //System.out.println((currentObject.get("colorFill")).toString());
+                ((AbstractDiagramNode)object).setColorFill(new Color(((Long)(currentObject.get("colorFillR"))).intValue(), ((Long)(currentObject.get("colorFillG"))).intValue(), ((Long)(currentObject.get("colorFillB"))).intValue()));
+                ((AbstractDiagramNode)object).setColorBorder(new Color(((Long)(currentObject.get("colorBorderR"))).intValue(), ((Long)(currentObject.get("colorBorderG"))).intValue(), ((Long)(currentObject.get("colorBorderB"))).intValue()));
+                ((AbstractDiagramNode)object).setColorFont(new Color(((Long)(currentObject.get("colorFontR"))).intValue(), ((Long)(currentObject.get("colorFontG"))).intValue(), ((Long)(currentObject.get("colorFontB"))).intValue()));
+
                 newRootElement.addToQueue((DiagramObject)object);
                 newRootElement.diagramObjects.put(((AbstractDiagramNode) object).getId(), (AbstractDiagramNode)object);
             }
 
              while (linkIterator.hasNext()) {
-                  JSONObject currentObject = (JSONObject) linkIterator.next();
-                  String shape = currentObject.get("shape").toString();
-                  Integer idstart = ((Long)(currentObject.get("idstart"))).intValue();
-                  Integer idend = ((Long)(currentObject.get("idend"))).intValue();
-                  Integer id = ((Long)(currentObject.get("id"))).intValue();
-                  String caption =  currentObject.get("text").toString();
-                  AbstractDiagramNode nodeStart = (AbstractDiagramNode)newRootElement.diagramObjects.get(idstart);
-                  AbstractDiagramNode nodeEnd = (AbstractDiagramNode)newRootElement.diagramObjects.get(idend);
+                 JSONObject currentObject = (JSONObject) linkIterator.next();
+                 String shape = currentObject.get("shape").toString();
+                 Integer idstart = ((Long) (currentObject.get("idstart"))).intValue();
+                 Integer idend = ((Long) (currentObject.get("idend"))).intValue();
+                 Integer id = ((Long) (currentObject.get("id"))).intValue();
+                 AbstractDiagramNode nodeStart = (AbstractDiagramNode) newRootElement.diagramObjects.get(idstart);
+                 AbstractDiagramNode nodeEnd = (AbstractDiagramNode) newRootElement.diagramObjects.get(idend);
                  Class<?> bClass = Class.forName(shape);
-                 Constructor <?> constructor = bClass.getConstructor(AbstractDiagramNode.class, AbstractDiagramNode.class, String.class);
-                 Object object = constructor.newInstance(nodeStart, nodeEnd, caption);
-                 ((AbstractDiagramLink)(object)).setId(id);
-                  newRootElement.addToQueue(((AbstractDiagramLink)object));
-                 newRootElement.diagramObjects.put(((AbstractDiagramLink) object).getId(), (AbstractDiagramLink)object);
-                 }
+                 Constructor<?> constructor = bClass.getConstructor(AbstractDiagramNode.class, AbstractDiagramNode.class);
+                 Object object = constructor.newInstance(nodeStart, nodeEnd);
+                 ((AbstractDiagramLink) (object)).setId(id);
+                 newRootElement.addToQueue(((AbstractDiagramLink) object));
+                 newRootElement.diagramObjects.put(((AbstractDiagramLink) object).getId(), (AbstractDiagramLink) object);
+             }
 
-            setDiagramObject(newRootElement);
-            selection.clear();
-            canvas.repaint();
+             selection.clear();
+                canvas.repaint();
 
-   /*     } catch (FileNotFoundException e) {
+
+        } catch (FileNotFoundException e) {
             JOptionPane.showMessageDialog(new Frame(), "Выбранный файл не существует или был удалён", "Ошибка", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(new Frame(), "Файл повреждён или несовместим с данным программным обеспечением", "Ошибка", JOptionPane.ERROR_MESSAGE);
@@ -716,20 +746,12 @@ public class DiagramPanel extends JPanel {
             JOptionPane.showMessageDialog(new Frame(), "Файл повреждён или несовместим с данным программным обеспечением", "Ошибка", JOptionPane.ERROR_MESSAGE);
         } catch (InvocationTargetException e) {
             JOptionPane.showMessageDialog(new Frame(), "Файл повреждён или несовместим с данным программным обеспечением", "Ошибка", JOptionPane.ERROR_MESSAGE);
-        }*/
-    }
-
-
-
-
-    public DiagramCanvas getCanvas(){
-        return canvas;
+        }
     }
 
     private static int round(double val) {
         return (int) Math.round(val);
     }
-
 
     public void canvasMouseDown(MouseEvent e) {
         if (rootDiagramObject == null)
@@ -742,36 +764,28 @@ public class DiagramPanel extends JPanel {
         if (panningMode) {
             // set mouse cursor to 'closed hand'
             // Screen.Cursor = crClHand;
-
             startPoint.x = round(hsb.getValue() / SCROLL_FACTOR + cursorPos.x / scale);
             startPoint.y = round(vsb.getValue() / SCROLL_FACTOR + cursorPos.y / scale);
-
-
         }
         //правая кнопка мыши по объекту вызывает окно свойств объекта
-
-        else if (SwingUtilities.isRightMouseButton(e) && e.getClickCount() == 1) {
+        else if (e.getButton() == MouseEvent.BUTTON3 && e.getClickCount() == 1) {
+            creatingLink = false;
+            canvas.repaint();
             SwingUtilities.convertPointFromScreen(cursorPos, canvas);
             startPoint.setLocation(cursorPos);
             currentPoint.setLocation(startPoint);
             DiagramObject diagramObject = rootDiagramObject.testHit(currentPoint.x, currentPoint.y);
             if ((diagramObject != null)) {
-                if (diagramObject.getClass().getName().equals("code.DiagramLabel")) {
-                    AbstractDiagramLink linkParent = (AbstractDiagramLink)((DiagramLabel)diagramObject).getLabelParent();
-                    contextFrame = new ContextFrame("Свойства " + linkParent.getnFrom(), linkParent.getnFrom(), canvas);
+                selection.clear();
+                selection.mouseDown(diagramObject, false);
+                ((AbstractDiagramNode)diagramObject).errorPaintReset();
+                mouseDown = true;
 
-                } else {
-                    {
-                        contextFrame = new ContextFrame("Свойства " + diagramObject.getCaption(), diagramObject, canvas);
-
-                    }
-                }
+                contextFrame = new ContextFrame("Свойства " + diagramObject.getCaption(), diagramObject, canvas);
             }
         }
 
         //создание блока, выбранного на панели объектов
-
-
         else if (creatingBlock!= null){
 
             SwingUtilities.convertPointFromScreen(cursorPos, canvas);
@@ -804,13 +818,11 @@ public class DiagramPanel extends JPanel {
 
             rootDiagramObject.addToQueue(((DiagramObject)object));
             ((Scheme)(rootDiagramObject)).diagramObjects.put(((AbstractDiagramNode) object).getId(), (AbstractDiagramNode)object);
+
             creatingBlock = null;
             pressed.setSelected(false);
             canvas.repaint();
-
-
         }
-
         //создание связи
         else if(creatingLink){
             SwingUtilities.convertPointFromScreen(cursorPos, canvas);
@@ -818,14 +830,49 @@ public class DiagramPanel extends JPanel {
             currentPoint.setLocation(startPoint);
 
             DiagramObject diagramObject = rootDiagramObject.testHit(currentPoint.x, currentPoint.y);
+
             if ((diagramObject != null)) {
               if(AbstractDiagramNode.class.isAssignableFrom(diagramObject.getClass())){
+                  AbstractDiagramNode node = (AbstractDiagramNode)diagramObject;
+                  if(node == ContextFrame.item){
+                      abortLinkCreation("Блоки не могут замыкаться на самих себя");
+                      return;
+                  }
+                  if(!creatingFromContextNode && node.getClass().equals(DiagramTerminatorEnd.class)){
+                      abortLinkCreation("Блок конца не может иметь исходяших связей");
+                      return;
+                  }
+                  if(creatingFromContextNode && node.getClass().equals(DiagramTerminatorStart.class)){
+                      abortLinkCreation("Блок начала не может иметь входящих связей");
+                      return;
+                  }
+                  if(!creatingFromContextNode && !node.getClass().equals(DiagramRhombus.class) && node.get_lines_out().size()>0){
+                      abortLinkCreation("Блок " + node.getName()  + " не может иметь больше исходящих связей");
+                      return;
+                  }
+                  if(creatingFromContextNode && ContextFrame.item.getClass().equals(DiagramRhombus.class)){
+                      if(ContextFrame.item.get_lines_out().size() != 0 && ContextFrame.item.get_lines_out().get(0).nTo == node){
+                          abortLinkCreation("Выходы из блока условий " + node.getName()  + "должны вести к разным блокам");
+                          return;
+                      }
+                  }
+                  if(!creatingFromContextNode && node.getClass().equals(DiagramRhombus.class)){
+                      if(node.get_lines_out().size() != 0 && node.get_lines_out().get(0).nTo == ContextFrame.item){
+                          abortLinkCreation("Выходы из блока условий " + node.getName()  + "должны вести к разным блокам");
+                          return;
+                      }
+                  }
+                  if(!creatingFromContextNode && node.getClass().equals(DiagramRhombus.class) && node.get_lines_out().size()>1){
+                      abortLinkCreation("Блок " + node.getName()  + "не может иметь больше исходящих связей");
+                      return;
+                  }
+
                   DiagramGeneralization diagramGeneralization;
-                  if (creatingIn) {
-                       diagramGeneralization = new DiagramGeneralization(ContextFrame.item, (AbstractDiagramNode) diagramObject, "");
+                  if (creatingFromContextNode) {
+                       diagramGeneralization = new DiagramGeneralization(ContextFrame.item, node);
                   }
                   else{
-                       diagramGeneralization = new DiagramGeneralization((AbstractDiagramNode) diagramObject, ContextFrame.item,  "");
+                       diagramGeneralization = new DiagramGeneralization(node, ContextFrame.item);
                   }
                   Set<Integer> keys = ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.keySet();
                   diagramGeneralization.setId(Collections.max(keys) + 1);
@@ -852,11 +899,30 @@ public class DiagramPanel extends JPanel {
         }
     }
 
+    void abortLinkCreation(String str){
+        JOptionPane.showMessageDialog(new Frame(), str, "Ошибка", JOptionPane.ERROR_MESSAGE);
+        creatingLink = false;
+        canvas.repaint();
+    }
+
     private void canvasMouseMoved(MouseEvent e) {
         if (rootDiagramObject == null)
             return;
         currentElement = rootDiagramObject.testHit(e.getX(), e.getY());
-        if (currentElement == null) {
+
+        if(creatingLink) {
+
+            Point cursorPos = MouseInfo.getPointerInfo().getLocation();
+            strokeLine.draw(canvas.getGraphics(), 0, 0, scale);
+            strokeLine.drawSelection(currentPoint.x, currentPoint.y);
+            SwingUtilities.convertPointFromScreen(cursorPos, canvas);
+            currentPoint.setLocation(cursorPos);
+            strokeLine.draw(canvas.getGraphics(), 0, 0, scale);
+            strokeLine.drawSelection(currentPoint.x, currentPoint.y);
+
+            hintLabel.setText("Теперь нажмите на блок, с которым хотите создать связь");
+        }
+        else if (currentElement == null) {
             String h = rootDiagramObject.getHint();
             hintLabel.setText(h);
         } else {
@@ -869,7 +935,8 @@ public class DiagramPanel extends JPanel {
         if (rootDiagramObject == null)
             return;
         Point cursorPos = MouseInfo.getPointerInfo().getLocation();
-        if (panningMode) {
+        if (panningMode || SwingUtilities.isMiddleMouseButton(e)) {
+            System.out.println("dragging");
             // передвижение картинки как единого целого
             hsb.setValue(round((startPoint.x - cursorPos.x / scale) * SCROLL_FACTOR));
             vsb.setValue(round((startPoint.y - cursorPos.y / scale) * SCROLL_FACTOR));
@@ -919,23 +986,19 @@ public class DiagramPanel extends JPanel {
             setScale(scale * Math.exp(-e.getPreciseWheelRotation() / WHEEL_FACTOR));
         } else {
             Point clientPos = e.getPoint();
-            if (clientPos.x > clientPos.y) {
-                int newPos = vsb.getValue() + round(e.getPreciseWheelRotation() * SCROLL_FACTOR * 2);
-                if (newPos < 0) {
-                    vsb.setValue(0);
-                } else if ((newPos > 0) && (newPos < vsb.getMaximum() - vsb.getVisibleAmount())) {
-                    vsb.setValue(newPos);
-                } else {
-                    vsb.setValue(vsb.getMaximum() - vsb.getVisibleAmount());
-                }
-            } else {
-                int newPos = hsb.getValue() + round(e.getPreciseWheelRotation() * SCROLL_FACTOR * 2);
+            if ((e.getModifiersEx() & MouseWheelEvent.SHIFT_DOWN_MASK) > 0) {
+                int newPos = hsb.getValue() + round(e.getPreciseWheelRotation() * SCROLL_FACTOR * 20);
                 if (newPos < 0) {
                     hsb.setValue(0);
-                } else if ((newPos > 0) && (newPos < hsb.getMaximum() - hsb.getVisibleAmount())) {
-                    hsb.setValue(newPos);
                 } else {
-                    hsb.setValue(hsb.getMaximum() - hsb.getVisibleAmount());
+                    hsb.setValue(newPos);
+                }
+            } else {
+                int newPos = vsb.getValue() + round(e.getPreciseWheelRotation() * SCROLL_FACTOR * 20);
+                if (newPos < 0) {
+                    vsb.setValue(0);
+                } else {
+                    vsb.setValue(newPos);
                 }
             }
         }
@@ -1161,13 +1224,13 @@ public class SelectionManager {
                  * снабдить лассо правильным Canvas'ом
                  */
                 lasso.draw(canvas.getGraphics(), 0, 0, scale);
-                lasso.drawSelection(/* canvas.getGraphics(), */ dX, dY);
+                lasso.drawSelection(dX, dY);
                 break;
             // Режим передвижения объектов
             default:
                 for (DiagramObject i : items) {
                     assert i != null;
-                    i.drawSelection(/* canvas.getGraphics(), */ dX, dY);
+                    i.drawSelection(dX, dY);
                 }
         }
     }
@@ -1179,16 +1242,11 @@ public class SelectionManager {
                 DiagramObject curItem = i.getParent();
                 while (curItem != null && !items.contains(curItem)) {
                     curItem = curItem.getParent();
-
                 }
                 if (curItem == null)
                     i.drop(dX, dY);
-
             }
-
         }
-
-
     }
 
     void mouseUp(int dX, int dY) {
@@ -1209,17 +1267,14 @@ public class SelectionManager {
                 break;
         }
         state = DiagramPanel.State.SELECTING;
-
     }
-
-
 }
 
-    public class Lasso extends DiagramObject {
+public class Lasso extends DiagramObject {
     @Override
     protected void internalDrawSelection(int dX, int dY) {
 
-        getCanvas().setColor(Color.GREEN);
+        getCanvas().setColor(Color.BLACK);
         getCanvas().setXORMode(Color.WHITE);
 
         Graphics2D g2 = (Graphics2D) getCanvas();
@@ -1263,8 +1318,30 @@ public class SelectionManager {
     }
 }
 
+public class StrokeLine extends  DiagramObject{
 
-    public class DiagramCanvas extends Canvas{
+    @Override
+    protected void internalDrawSelection(int dX, int dY) {
+
+        getCanvas().setColor(Color.BLACK);
+        getCanvas().setXORMode(Color.WHITE);
+
+        Graphics2D g2 = (Graphics2D) getCanvas();
+
+        float dash1[] = { 5.0f };
+        BasicStroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 5.0f, dash1, 0.0f);
+        Stroke s = g2.getStroke();
+        g2.setStroke(dashed);
+
+        g2.drawLine((int)(ContextFrame.item.getmX() * scale - rootDiagramObject.getDX()), (int)(ContextFrame.item.getmY() * scale - rootDiagramObject.getDY()), Math.abs(dX), Math.abs(dY));
+        g2.setStroke(s);
+
+        getCanvas().setPaintMode();
+    }
+}
+
+
+public class DiagramCanvas extends Canvas{
 
         private static final long serialVersionUID = 1L;
 
@@ -1318,6 +1395,7 @@ public class SelectionManager {
             }
 
             rootDiagramObject.draw(g, dX, dY, scale);
+
         }
 
     }

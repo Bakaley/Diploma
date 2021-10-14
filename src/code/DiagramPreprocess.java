@@ -2,13 +2,9 @@ package code;
 
 import java.awt.*;
 
-/**
- * UML Use Case on a diagram.
- */
-class DiagramRectangle extends AbstractDiagramNode {
+public class DiagramPreprocess extends AbstractDiagramNode{
 
-
-    public DiagramRectangle(double i, double j, String string) {
+    public DiagramPreprocess(double i, double j, String string) {
         super(i, j, string);    getVertices().clear();
 
         addVertex("down", new Vertex(i+ (WIDTH / 2),  j));
@@ -34,9 +30,11 @@ class DiagramRectangle extends AbstractDiagramNode {
         getCanvas().setColor(colorFill);
         getCanvas().fillRect(scaleX(getmX() -WIDTH/2)+1 , scaleY(getmY() - HEIGHT / 2)+1, scale(WIDTH)-1, scale(HEIGHT)-1);
         getCanvas().setColor(colorFont);
-       // getCanvas().setPaintMode();
+        getCanvas().drawLine(scaleX(mX - WIDTH/7*3), scaleY(mY + HEIGHT/2), scaleX(mX - WIDTH/7*3), scaleY(mY - HEIGHT/2));
+        getCanvas().drawLine(scaleX(mX + WIDTH/7*3), scaleY(mY + HEIGHT/2), scaleX(mX + WIDTH/7*3), scaleY(mY - HEIGHT/2));
 
         drawText();
+        // getCanvas().setPaintMode();
 
     }
 
@@ -92,5 +90,4 @@ class DiagramRectangle extends AbstractDiagramNode {
         hintStr.append("Operation: " + getCaption());
         return true;
     }
-
 }

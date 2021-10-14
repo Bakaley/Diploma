@@ -20,6 +20,10 @@ abstract class AbstractDiagramNode extends DiagramObject{
     protected Color colorFont = Color.black;
     protected Color colorBorder = Color.black;
 
+    protected Color savedFill = Color.cyan;
+    protected Color savedFont = Color.black;
+    protected Color savedBorder = Color.black;
+
     protected HashMap <String, Vertex> vertices = new HashMap<>();
 
     public HashMap<String, Vertex> getVertices (){
@@ -30,10 +34,31 @@ abstract class AbstractDiagramNode extends DiagramObject{
         vertices.put(string, vertex);
     }
 
-    public void setColorFont (Color color) { this.colorFont = color;}
-    public void setColorFill (Color color) { this.colorFill = color;}
-    public void setColorBorder(Color color) {this.colorBorder = color;}
+    public void setColorFont (Color color) {
+        this.colorFont = color;
+        savedFont = color;
+    }
+    public void setColorFill (Color color) {
+        this.colorFill = color;
+        savedFill = color;
+    }
+    public void setColorBorder(Color color) {
+        this.colorBorder = color;
+        savedBorder = color;
+    }
 
+    void drawText(){
+        String[] parts = getCaption().split("\n");
+        double yShift = parts.length%2 == 0 ? 1 : 0.5;
+        double xShift;
+        int n = - parts.length/2;
+
+        for (int i = 0; i < parts.length; i++, n++){
+            FontMetrics metrics = getCanvas().getFontMetrics();
+            xShift = metrics.stringWidth(parts[i]);
+            getCanvas().drawString(parts[i], (int)(scaleX(mX)-xShift/2), scaleY(mY + yShift * FONTSIZEPT + n * FONTSIZEPT));
+        }
+    }
 
     public ArrayList<DiagramGeneralization> get_lines_in() {
         HashMap <Integer, DiagramObject> diagramObjects = ((Scheme)getDiagramObject()).diagramObjects;
@@ -41,7 +66,7 @@ abstract class AbstractDiagramNode extends DiagramObject{
         Iterator<DiagramObject> iterator = diagramObjects.values().iterator();
         while (iterator.hasNext()){
             DiagramObject object = iterator.next();
-            if(object.getClass().getName().equals("code.DiagramGeneralization")) {
+            if(object.getClass().equals(code.DiagramGeneralization.class)) {
                 DiagramGeneralization link = (DiagramGeneralization)object;
                 if(link.nTo == this){
                     lines.add(link);
@@ -56,7 +81,7 @@ abstract class AbstractDiagramNode extends DiagramObject{
         Iterator<DiagramObject> iterator = diagramObjects.values().iterator();
         while (iterator.hasNext()) {
             DiagramObject object = iterator.next();
-            if (object.getClass().getName().equals("code.DiagramGeneralization")) {
+            if (object.getClass().equals(code.DiagramGeneralization.class)) {
                 DiagramGeneralization link = (DiagramGeneralization) object;
                 if (link.nFrom == this) {
                     lines.add(link);
@@ -69,11 +94,20 @@ abstract class AbstractDiagramNode extends DiagramObject{
         protected JSONObject getJSON(){
         JSONObject elementDetails = new JSONObject();
 
-        elementDetails.put("id", this.getId());
-        elementDetails.put("x", this.getmX());
-        elementDetails.put("y", this.getmY());
-        elementDetails.put("text", this.getCaption());
-        elementDetails.put("shape", this.getClass().getName());
+            elementDetails.put("id", this.getId());
+            elementDetails.put("x", this.getmX());
+            elementDetails.put("y", this.getmY());
+            elementDetails.put("text", this.getClearCaption());
+            elementDetails.put("shape", this.getClass().getName());
+            elementDetails.put("colorFillR", this.colorFill.getRed());
+            elementDetails.put("colorFillG", this.colorFill.getGreen());
+            elementDetails.put("colorFillB", this.colorFill.getBlue());
+            elementDetails.put("colorFontR", this.colorFont.getRed());
+            elementDetails.put("colorFontG", this.colorFont.getGreen());
+            elementDetails.put("colorFontB", this.colorFont.getBlue());
+            elementDetails.put("colorBorderR", this.colorBorder.getRed());
+            elementDetails.put("colorBorderG", this.colorBorder.getGreen());
+            elementDetails.put("colorBorderB", this.colorBorder.getBlue());
 
         return elementDetails;
     }
@@ -86,13 +120,64 @@ abstract class AbstractDiagramNode extends DiagramObject{
 
     }
 
+    ArrayList <AbstractDiagramNode> getChainedBlocksDown(){
+        ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+        for (DiagramObject obj: ((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values()) {
+            if(obj.getClass().equals(DiagramGeneralization.class)){
+                schemeNodes.remove(obj);
+            }
+        }
+        schemeNodes.remove(this);
+        ArrayList<AbstractDiagramNode> nodesToCheck = new ArrayList<>();
+        ArrayList<AbstractDiagramNode> checkedNodes = new ArrayList<>();
+
+        for (AbstractDiagramLink link : get_lines_out()) {
+            nodesToCheck.add(link.nTo);
+        }
+        checkedNodes.add(this);
+
+        while (nodesToCheck.size() != 0){
+            for (AbstractDiagramLink link : nodesToCheck.get(0).get_lines_out()) {
+                if(!checkedNodes.contains(link.nTo) && !nodesToCheck.contains(link.nTo)) nodesToCheck.add(link.nTo);
+            }
+            checkedNodes.add(nodesToCheck.get(0));
+            nodesToCheck.remove(nodesToCheck.get(0));
+        }
+        return checkedNodes;
+    }
+
+    ArrayList <AbstractDiagramNode> getChainedBlocksUp(){
+        ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+        for (DiagramObject obj: ((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values()) {
+            if(obj.getClass().equals(DiagramGeneralization.class)){
+                schemeNodes.remove(obj);
+            }
+        }
+        schemeNodes.remove(this);
+        ArrayList<AbstractDiagramNode> nodesToCheck = new ArrayList<>();
+        ArrayList<AbstractDiagramNode> checkedNodes = new ArrayList<>();
+
+        for (AbstractDiagramLink link : get_lines_in()) {
+            nodesToCheck.add(link.nFrom);
+        }
+        checkedNodes.add(this);
+
+        while (nodesToCheck.size() != 0){
+            for (AbstractDiagramLink link : nodesToCheck.get(0).get_lines_in()) {
+                if(!checkedNodes.contains(link.nFrom) && !nodesToCheck.contains(link.nFrom)) nodesToCheck.add(link.nFrom);
+            }
+            checkedNodes.add(nodesToCheck.get(0));
+            nodesToCheck.remove(nodesToCheck.get(0));
+        }
+        checkedNodes.remove(this);
+        return checkedNodes;
+    }
+
 
     protected static double SIZE_SCALE = 1.5;
     protected static int FONTSIZEPT = 10;
-    protected static double HEIGHT = SIZE_SCALE * 3 * FONTSIZEPT;
-    protected static double WIDTH = SIZE_SCALE * 50;
-    protected double shift;
-
+    protected static double HEIGHT = SIZE_SCALE * 4 * FONTSIZEPT;
+    protected static double WIDTH = SIZE_SCALE * 75;
     protected double getHEIGHT (){return HEIGHT;}
     protected double getWIDTH (){return WIDTH;}
     
@@ -101,6 +186,7 @@ abstract class AbstractDiagramNode extends DiagramObject{
         return mX;
     }
 
+    private boolean errorPainted;
 
     final double getmY() {
         return mY;
@@ -108,6 +194,11 @@ abstract class AbstractDiagramNode extends DiagramObject{
 
     @Override
     protected String getCaption() {
+        if(caption.isEmpty()) return "<Пусто>";
+        return caption;
+    }
+
+    public String getClearCaption(){
         return caption;
     }
 
@@ -129,6 +220,23 @@ abstract class AbstractDiagramNode extends DiagramObject{
     protected abstract Vertex getLeftVertex();
     protected abstract Vertex getRightVertex();
 
+    public void errorPaint() {
+        if(!errorPainted){
+            errorPainted = true;
+            savedFill = colorFill;
+            savedBorder = colorBorder;
+            savedFont = colorFont;
+            colorFill = Color.red;
+            colorFont = Color.white;
+        }
+    }
+
+    public void errorPaintReset(){
+        errorPainted = false;
+        colorFill = savedFill;
+        colorBorder = savedBorder;
+        colorFont = savedFont;
+    }
 
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {

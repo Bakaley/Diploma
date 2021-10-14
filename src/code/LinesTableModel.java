@@ -25,7 +25,7 @@ public  class LinesTableModel extends AbstractTableModel {
     }
 
     public int getColumnCount() {
-        return 3;
+        return 2;
     }
 
 
@@ -35,8 +35,6 @@ public  class LinesTableModel extends AbstractTableModel {
                 return "Начало";
             case 1:
                 return "Конец";
-            case 2:
-                return "Надпись";
         }
         return "";
     }
@@ -47,8 +45,6 @@ public  class LinesTableModel extends AbstractTableModel {
             case 0:
                 return String.class;
             case 1:
-                return String.class;
-            case 2:
                 return String.class;
             default:  return Object.class;
         }
@@ -65,22 +61,19 @@ public  class LinesTableModel extends AbstractTableModel {
                 if(line.nFrom == node){
                     return "Этот блок";
                 }
-                else return line.nFrom.getCaption();
+                else return line.nFrom.getName();
 
             case 1:
                 if(line.nTo == node){
                     return "Этот блок";
                 }
-                else return line.nTo.getCaption();
-            case 2:
-                return line.getCaption();
-
+                else return line.nTo.getName();
         }
         return "";
     }
 
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        return true;
+        return false;
     }
 
     public void removeTableModelListener(TableModelListener listener) {

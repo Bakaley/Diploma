@@ -1,5 +1,6 @@
 package code;
 
+import javax.swing.*;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,8 +12,7 @@ import java.util.Map;
  */
 public class Scheme extends DiagramObject {
 
-    public HashMap <Integer, DiagramObject> diagramObjects = new HashMap<>();
-
+    public DiagramHashMap <Integer, DiagramObject> diagramObjects = new DiagramHashMap<>();
 
         public Scheme(boolean empty) {
             if(empty){
@@ -30,15 +30,14 @@ public class Scheme extends DiagramObject {
                 DiagramTerminator t2 = new DiagramTerminatorEnd(250, 550, "End");
 
 
-
-                DiagramGeneralization diagramGeneralization1 = new DiagramGeneralization(t1, p1, "");
-                DiagramGeneralization diagramGeneralization2 = new DiagramGeneralization(p1, o1, "");
-                DiagramGeneralization diagramGeneralization3 = new DiagramGeneralization(o1, r1, "");
-                DiagramGeneralization diagramGeneralization4 = new DiagramGeneralization(r1, o2, "true");
-                DiagramGeneralization diagramGeneralization5 = new DiagramGeneralization(o2, o3, "");
-                DiagramGeneralization diagramGeneralization6 = new DiagramGeneralization(o3, r1, "");
-                DiagramGeneralization diagramGeneralization7 = new DiagramGeneralization(r1, p2, "false");
-                DiagramGeneralization diagramGeneralization8 = new DiagramGeneralization(p2, t2, "");
+                DiagramGeneralization diagramGeneralization1 = new DiagramGeneralization(t1, p1);
+                DiagramGeneralization diagramGeneralization2 = new DiagramGeneralization(p1, o1);
+                DiagramGeneralization diagramGeneralization3 = new DiagramGeneralization(o1, r1);
+                DiagramGeneralization diagramGeneralization4 = new DiagramGeneralization(r1, o2);
+                DiagramGeneralization diagramGeneralization5 = new DiagramGeneralization(o2, o3);
+                DiagramGeneralization diagramGeneralization6 = new DiagramGeneralization(o3, r1);
+                DiagramGeneralization diagramGeneralization7 = new DiagramGeneralization(r1, p2);
+                DiagramGeneralization diagramGeneralization8 = new DiagramGeneralization(p2, t2);
 
 
                 diagramGeneralization1.setId(9);
@@ -133,9 +132,38 @@ public class Scheme extends DiagramObject {
     protected void internalDraw(Graphics canvas) {
     }
 
+    public DiagramTerminatorStart getStartTerm (){
+        ArrayList<DiagramObject> objs = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+        for (DiagramObject obj: objs) {
+            if (obj.getClass().equals(DiagramTerminatorStart.class)) {
+                return (DiagramTerminatorStart)obj;
+            }
+        }
+        return  null;
+    }
+
+    public DiagramTerminatorEnd getEndTerm (){
+        ArrayList<DiagramObject> objs = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+        for (DiagramObject obj: objs) {
+            if (obj.getClass().equals(DiagramTerminatorEnd.class)) {
+                return (DiagramTerminatorEnd)obj;
+            }
+        }
+        return  null;
+    }
+
     @Override
     protected double getMaxX() {
-        return 600;
+        double def = 1150;
+        ArrayList<DiagramObject> objs = new ArrayList<>(diagramObjects.values());
+        for (DiagramObject obj : objs) {
+            if (!obj.getClass().equals(DiagramGeneralization.class)) {
+                AbstractDiagramNode node = (AbstractDiagramNode) obj;
+                def = Math.max(def, node.getmX());
+            }
+        }
+        //System.out.println(DiagramPanel.getDiagramObject().getScale());
+        return def + 150;
     }
 
     @Override
@@ -143,12 +171,22 @@ public class Scheme extends DiagramObject {
 
     @Override
     protected double getMaxY() {
-        return 600;
+            double def = 700;
+        ArrayList<DiagramObject> objs = new ArrayList<>(diagramObjects.values());
+        for (DiagramObject obj : objs) {
+            if (!obj.getClass().equals(DiagramGeneralization.class)) {
+                AbstractDiagramNode node = (AbstractDiagramNode) obj;
+                def = Math.max(def, node.getmY());
+            }
+        }
+        return def + 150;
     }
 
     @Override
     protected double getMinY() {
         return  0;
     }
+
+
 
 }

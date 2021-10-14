@@ -36,12 +36,12 @@ public class ContextPanelTest {
         diagramPanel = new DiagramPanel();
         diagramPanel.setDiagramObject(new Scheme(true));
 
-        diagramGeneralization1 = new DiagramGeneralization(rectangle1, rectangle2, "");
-        diagramGeneralization2 = new DiagramGeneralization(rectangle2, rectangle3, "");
-        diagramGeneralization3 = new DiagramGeneralization(rectangle3, rectangle1, "");
-        diagramGeneralization4 = new DiagramGeneralization(rectangle1, rectangle2,"");
-        diagramGeneralization5 = new DiagramGeneralization(rectangle1, rectangle2,"");
-        diagramGeneralization6 = new DiagramGeneralization(rectangle1, rectangle3,"");
+        diagramGeneralization1 = new DiagramGeneralization(rectangle1, rectangle2);
+        diagramGeneralization2 = new DiagramGeneralization(rectangle2, rectangle3);
+        diagramGeneralization3 = new DiagramGeneralization(rectangle3, rectangle1);
+        diagramGeneralization4 = new DiagramGeneralization(rectangle1, rectangle2);
+        diagramGeneralization5 = new DiagramGeneralization(rectangle1, rectangle2);
+        diagramGeneralization6 = new DiagramGeneralization(rectangle1, rectangle3);
 
         rectangle1.setId(0);
         rectangle1.setId(1);

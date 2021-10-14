@@ -31,15 +31,14 @@ public class DiagramParallelogram extends AbstractDiagramNode {
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
         FontMetrics metrics = getCanvas().getFontMetrics();
-        shift = metrics.stringWidth(getCaption());
 
         getCanvas().setColor(colorFill);
         getCanvas().fillPolygon(x, y, 4);
         getCanvas().setColor(colorBorder);
         getCanvas().drawPolygon(x, y, 4);
         getCanvas().setColor(colorFont);
-        getCanvas().drawString(getCaption(), (int)(scaleX(mX)-shift/2) , scaleY(mY + 0.5 * (FONTSIZEPT)));
 
+        drawText();
     }
 
     @Override

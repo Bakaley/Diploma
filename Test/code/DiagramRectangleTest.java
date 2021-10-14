@@ -11,12 +11,13 @@ public class DiagramRectangleTest {
 
     @Before
     public void setUp() throws Exception {
-        diagramRectangle = new DiagramRectangle(50, 70, "");
+
 
     }
 
     @Test
     public void internalTestHit() {
+        diagramRectangle = new DiagramRectangle(50, 70, "");
         assertEquals(diagramRectangle.internalTestHit(60, 60), true);
         assertEquals(diagramRectangle.internalTestHit(200, -15), false);
         assertEquals(diagramRectangle.internalTestHit(195, 75), false);

@@ -29,12 +29,9 @@ class DiagramRhombus extends AbstractDiagramNode {
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
         FontMetrics metrics = getCanvas().getFontMetrics();
-        shift = metrics.stringWidth(getCaption());
 
         int[] x = {scaleX(mX),  scaleX(mX +  WIDTH / 2),scaleX(mX ), scaleX(mX - WIDTH / 2)};
         int[] y = {scaleY(mY- HEIGHT/2), scaleY(mY ),  scaleY(mY +  HEIGHT/2), scaleY(mY)};
-        int[] x2 = {scaleX(mX)+1,                 scaleX(mX +  WIDTH / 2)-1,    scaleX(mX )-1,                  scaleX(mX - WIDTH / 2)+1};
-        int[] y2 = {scaleY(mY- HEIGHT/2)+1, scaleY(mY),                      scaleY(mY +  HEIGHT/2)-1, scaleY(mY)};
 
 
         getCanvas().setColor(colorFill);
@@ -42,7 +39,8 @@ class DiagramRhombus extends AbstractDiagramNode {
         getCanvas().setColor(colorBorder);
         getCanvas().drawPolygon(x, y, 4);
         getCanvas().setColor(colorFont);
-        getCanvas().drawString(getCaption(), (int)(scaleX(mX)-shift/2) , scaleY(mY + 0.5 * (FONTSIZEPT)));
+
+        drawText();
 
 //        getVertices().clear();
 //        getVertices().add(new Vertex(minX()+ scale(WIDTH / 2),  minY(), "bot-miiddle"));

@@ -101,7 +101,7 @@ public class DiagramPanelTest {
         scheme.diagramObjects.put(diagramRhombus.getId(), diagramRhombus);
 
 
-        DiagramGeneralization diagramGeneralization = new DiagramGeneralization(diagramRectangle, diagramRhombus, "");
+        DiagramGeneralization diagramGeneralization = new DiagramGeneralization(diagramRectangle, diagramRhombus);
         diagramRectangle.setId(32);
         scheme.addToQueue(diagramGeneralization);
         scheme.diagramObjects.put(diagramGeneralization.getId(), diagramGeneralization);

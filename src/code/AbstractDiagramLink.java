@@ -11,8 +11,20 @@ import java.util.ArrayList;
  */
 public abstract class AbstractDiagramLink extends DiagramObject {
 
+    protected DiagramLabel label;
+
+    public double getCenterX(){
+        return (nFrom.getTopMiddleVertex().getX() + nTo.getBotMiddleVertex().getX())/2;
+    }
+
+    public double getCenterY(){
+        return (nFrom.getTopMiddleVertex().getY() + nTo.getBotMiddleVertex().getY())/2;
+    }
+
+
     protected AbstractDiagramNode nFrom;
     protected AbstractDiagramNode nTo;
+
     protected AbstractDiagramNode getnFrom() {
         return nFrom;
     }
@@ -55,7 +67,6 @@ public abstract class AbstractDiagramLink extends DiagramObject {
         JSONObject elementDetails = new JSONObject();
         elementDetails.put("idstart", this.getnFrom().getId());
         elementDetails.put("idend", this.getnTo().getId());
-        elementDetails.put("text", this.getCaption());
         elementDetails.put("shape", this.getClass().getName());
         elementDetails.put(("id"), this.getId());
         return elementDetails;

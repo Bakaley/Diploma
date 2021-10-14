@@ -2,6 +2,7 @@ package code;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
+import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -21,7 +22,7 @@ public class AppStart extends JFrame {
     public AppStart() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        setBounds(0, 0, 1600, 1200);
+        setBounds(0, 0, 600, 600);
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(contentPane);
@@ -30,7 +31,6 @@ public class AppStart extends JFrame {
         DiagramPanel panel = new DiagramPanel();
         panel.setDiagramObject(new Scheme(true));
         contentPane.add(panel);
-
     }
 
     /**
@@ -40,9 +40,9 @@ public class AppStart extends JFrame {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    AppStart frame = new AppStart();
-                    frame.setVisible(true);
-
+                    mainWindow = new AppStart();
+                    mainWindow.setVisible(true);
+                    changeWindowTitle("New scheme");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -50,5 +50,9 @@ public class AppStart extends JFrame {
         });
     }
 
+    static AppStart mainWindow = null;
 
+    public static void changeWindowTitle(String fineName){
+        mainWindow.setTitle(fineName + " - Scheme checker 1.0");
+    }
 }
