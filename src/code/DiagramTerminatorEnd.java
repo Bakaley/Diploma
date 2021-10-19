@@ -5,4 +5,5 @@ public class DiagramTerminatorEnd extends DiagramTerminator{
         super(i, j, string);
         this.setCaption("Конец");
     }
+
 }

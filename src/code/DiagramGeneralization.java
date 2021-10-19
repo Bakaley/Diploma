@@ -33,7 +33,6 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
             final ArrayList<DiagramGeneralization> lines_out = nFrom.get_lines_out();
             if(lines_out.size() > 0){
                 DiagramLabel label1 = lines_out.get(0).label;
-                System.out.println(label1.caption);
                 if(lines_out.get(0).label.caption.equals("true")) label.caption = "false";
                 else label.caption = "true";
             } else label.caption = "true";
@@ -58,7 +57,7 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
 
     @Override
     public double getLabelY() {
-        return (nTo.getmY() + nFrom.getmY()) / 2 + ldY - 2;
+        return (nTo.getmY() + nFrom.getmY()) / 2 + ldY - 2 - DiagramPanel.getDiagramObject().getDY();
     }
 
     @Override
@@ -301,4 +300,6 @@ class DiagramGeneralization extends AbstractDiagramLink implements LabelParent {
     private double length (double x1, double y1, double x2, double y2){
         return Math.sqrt((x1 - x2) * ( x1 - x2) + ( y1 - y2) * (y1 - y2));
     }
+
+    public boolean passed = false;
 }

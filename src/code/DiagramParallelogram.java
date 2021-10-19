@@ -91,8 +91,15 @@ public class DiagramParallelogram extends AbstractDiagramNode {
 
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {
-        hintStr.append("Input/output: " + getCaption());
+        hintStr.append("Ввод/вывод: " + getCaption());
         return true;
     }
 
+    @Override
+    public void generateCode(SchemeCompiler.CodeGenerator codeGenerator) {
+        String[] strings = code.split("\n");
+        for (String str : strings) {
+            codeGenerator.add(str);
+        }
+    }
 }

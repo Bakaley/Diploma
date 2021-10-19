@@ -2,10 +2,11 @@ package code;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 /**
@@ -15,6 +16,7 @@ public class AppStart extends JFrame {
     private static final long serialVersionUID = 1L;
 
     private JPanel contentPane;
+    DiagramPanel panel;
 
     /**
      * Create the frame.
@@ -28,7 +30,7 @@ public class AppStart extends JFrame {
         setContentPane(contentPane);
         contentPane.setLayout(new BorderLayout(0, 0));
 
-        DiagramPanel panel = new DiagramPanel();
+        panel = new DiagramPanel();
         panel.setDiagramObject(new Scheme(true));
         contentPane.add(panel);
     }
@@ -43,6 +45,39 @@ public class AppStart extends JFrame {
                     mainWindow = new AppStart();
                     mainWindow.setVisible(true);
                     changeWindowTitle("New scheme");
+
+                    mainWindow.addWindowListener(new WindowAdapter() {
+                        public void windowClosing(WindowEvent e) {
+                            if(mainWindow.panel.getDiagramObject().getFirstSubObj() != null) {
+                                Object[] options = {"Сохранить", "Не сохранять", "Отмена"};
+
+                                int option = JOptionPane.showOptionDialog(null,
+                                        "Желаете сохранить текущий файл? Все несохранённые данные будут утеряны.",
+                                        "Сохранить изменения?",
+                                        JOptionPane.YES_NO_CANCEL_OPTION,
+                                        JOptionPane.QUESTION_MESSAGE,
+                                        null,     //do not use a custom Icon
+                                        options,  //the titles of buttons
+                                        options[0]); //default button title
+
+                                switch (option) {
+                                    case (2):
+                                        mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                                        return;
+                                    case (1):
+                                        mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                                        mainWindow.dispose();
+                                        break;
+                                    case (0):
+                                        if(mainWindow.panel.saveFile()){
+                                            mainWindow.dispose();
+                                        }
+                                        else mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                                        break;
+                                }
+                            }
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

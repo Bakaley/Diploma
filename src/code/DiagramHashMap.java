@@ -33,6 +33,11 @@ public class DiagramHashMap<K, V> extends HashMap<K, V> {
     @Override
     public V remove(Object key) {
         V result =  super.remove(key);
+        refreshButtons();
+        return result;
+    }
+
+    public void refreshButtons(){
         DiagramPanel.termButtonStart.setEnabled(true);
         DiagramPanel.termButtonEnd.setEnabled(true);
         Iterator<Map.Entry<K, V>> itr = this.entrySet().iterator();
@@ -45,6 +50,5 @@ public class DiagramHashMap<K, V> extends HashMap<K, V> {
                     DiagramPanel.termButtonEnd.setEnabled((false));
             }
         }
-        return result;
     }
 }

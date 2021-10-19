@@ -1,5 +1,8 @@
 package code;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import javax.swing.*;
 import java.awt.Graphics;
 import java.util.ArrayList;
@@ -126,14 +129,46 @@ public class Scheme extends DiagramObject {
                 //addObjectsToQueue();
 
             }
+            caption = "Новая схема";
         }
 
+    @Override
+    protected JSONObject getJSON() {
+        DiagramObject currentObject = getFirstSubObj();
+
+        JSONArray blockArray = new JSONArray();
+        JSONArray linkArray = new JSONArray();
+
+        while(currentObject!=getLastSubObj()){
+            if (!currentObject.getClass().getName().contains("DiagramGeneralization")){
+                blockArray.add(currentObject.getJSON());
+            }
+            else if (currentObject.getClass().getName().contains("DiagramGeneralization")){
+                linkArray.add(currentObject.getJSON());
+            }
+            currentObject = currentObject.getNext();
+        }
+        try {
+            if (getLastSubObj().getClass().getName().equals("code.DiagramGeneralization"))
+                linkArray.add(getLastSubObj().getJSON());
+            else blockArray.add(getLastSubObj().getJSON());
+
+            JSONObject jsonFile = new JSONObject();
+            jsonFile.put("blocks", blockArray);
+            jsonFile.put("links", linkArray);
+            return jsonFile;
+        }
+
+        catch (NullPointerException e){
+            return null;
+        }
+    }
 
     protected void internalDraw(Graphics canvas) {
     }
 
     public DiagramTerminatorStart getStartTerm (){
-        ArrayList<DiagramObject> objs = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+        ArrayList<DiagramObject> objs = new ArrayList<>(diagramObjects.values());
         for (DiagramObject obj: objs) {
             if (obj.getClass().equals(DiagramTerminatorStart.class)) {
                 return (DiagramTerminatorStart)obj;
@@ -143,7 +178,7 @@ public class Scheme extends DiagramObject {
     }
 
     public DiagramTerminatorEnd getEndTerm (){
-        ArrayList<DiagramObject> objs = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
+        ArrayList<DiagramObject> objs = new ArrayList<>(diagramObjects.values());
         for (DiagramObject obj: objs) {
             if (obj.getClass().equals(DiagramTerminatorEnd.class)) {
                 return (DiagramTerminatorEnd)obj;
@@ -162,7 +197,6 @@ public class Scheme extends DiagramObject {
                 def = Math.max(def, node.getmX());
             }
         }
-        //System.out.println(DiagramPanel.getDiagramObject().getScale());
         return def + 150;
     }
 
@@ -187,6 +221,6 @@ public class Scheme extends DiagramObject {
         return  0;
     }
 
-
+    public Scheme parentScheme;
 
 }

@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import static code.DiagramPanel.getDiagramObject;
-
 abstract class AbstractDiagramNode extends DiagramObject{
 
 
@@ -61,7 +59,7 @@ abstract class AbstractDiagramNode extends DiagramObject{
     }
 
     public ArrayList<DiagramGeneralization> get_lines_in() {
-        HashMap <Integer, DiagramObject> diagramObjects = ((Scheme)getDiagramObject()).diagramObjects;
+        HashMap <Integer, DiagramObject> diagramObjects = ((Scheme)(getParent())).diagramObjects;
         ArrayList <DiagramGeneralization> lines = new ArrayList<>();
         Iterator<DiagramObject> iterator = diagramObjects.values().iterator();
         while (iterator.hasNext()){
@@ -76,7 +74,7 @@ abstract class AbstractDiagramNode extends DiagramObject{
     return lines;}
 
     public ArrayList<DiagramGeneralization> get_lines_out() {
-        HashMap<Integer, DiagramObject> diagramObjects = ((Scheme) getDiagramObject()).diagramObjects;
+        HashMap<Integer, DiagramObject> diagramObjects = ((Scheme)(getParent())).diagramObjects;
         ArrayList<DiagramGeneralization> lines = new ArrayList<>();
         Iterator<DiagramObject> iterator = diagramObjects.values().iterator();
         while (iterator.hasNext()) {
@@ -121,8 +119,9 @@ abstract class AbstractDiagramNode extends DiagramObject{
     }
 
     ArrayList <AbstractDiagramNode> getChainedBlocksDown(){
-        ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
-        for (DiagramObject obj: ((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values()) {
+        Scheme dobj = (Scheme)getParent();
+        ArrayList<DiagramObject> schemeNodes = new ArrayList<>(dobj.diagramObjects.values());
+        for (DiagramObject obj: dobj.diagramObjects.values()) {
             if(obj.getClass().equals(DiagramGeneralization.class)){
                 schemeNodes.remove(obj);
             }
@@ -147,8 +146,10 @@ abstract class AbstractDiagramNode extends DiagramObject{
     }
 
     ArrayList <AbstractDiagramNode> getChainedBlocksUp(){
-        ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values());
-        for (DiagramObject obj: ((Scheme)DiagramPanel.getDiagramObject()).diagramObjects.values()) {
+        Scheme dobj = (Scheme)getParent();
+
+        ArrayList<DiagramObject> schemeNodes = new ArrayList<>(dobj.diagramObjects.values());
+        for (DiagramObject obj: dobj.diagramObjects.values()) {
             if(obj.getClass().equals(DiagramGeneralization.class)){
                 schemeNodes.remove(obj);
             }
@@ -244,6 +245,18 @@ abstract class AbstractDiagramNode extends DiagramObject{
         return true;
     }
 
+    public void generateCode(SchemeCompiler.CodeGenerator codeGenerator){
 
+    }
 
+    String code = "";
+    public void resetCodeString() {
+        for (DiagramGeneralization link : get_lines_in()) {  link.passed = false; }
+        for (DiagramGeneralization link : get_lines_out()) {  link.passed = false; }
+
+        code = "";
+    }
+    public void addCodeString(String str){
+        code += str + "\n";
+    }
 }

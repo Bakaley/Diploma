@@ -33,6 +33,8 @@ public class DiagramDiamond extends AbstractDiagramNode{
         getCanvas().drawPolygon(x, y, 6);
         getCanvas().setColor(colorFont);
 
+        getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
+
         drawText();
 
     }
@@ -93,8 +95,8 @@ public class DiagramDiamond extends AbstractDiagramNode{
 
     public ArrayList<AbstractDiagramNode> getBlocksInLoop() {
         if (isOpening) {
-            ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.values());
-            for (DiagramObject obj : ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.values()) {
+            ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme) getParent()).diagramObjects.values());
+            for (DiagramObject obj : ((Scheme) getParent()).diagramObjects.values()) {
                 if (obj.getClass().equals(DiagramGeneralization.class)) {
                     schemeNodes.remove(obj);
                 }
@@ -131,8 +133,8 @@ public class DiagramDiamond extends AbstractDiagramNode{
             return checkedNodes;
         }
         else{
-            ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.values());
-            for (DiagramObject obj : ((Scheme) DiagramPanel.getDiagramObject()).diagramObjects.values()) {
+            ArrayList<DiagramObject> schemeNodes = new ArrayList<>(((Scheme) getParent()).diagramObjects.values());
+            for (DiagramObject obj : ((Scheme) getParent()).diagramObjects.values()) {
                 if (obj.getClass().equals(DiagramGeneralization.class)) {
                     schemeNodes.remove(obj);
                 }
@@ -170,5 +172,14 @@ public class DiagramDiamond extends AbstractDiagramNode{
             checkedNodes.remove(loopStart);
             return checkedNodes;
         }
+    }
+
+    @Override
+    public void generateCode(SchemeCompiler.CodeGenerator codeGenerator) {
+        String[] strings = getClearCaption().split("\r\n");
+        if(isOpening){
+            codeGenerator.addWhile(strings[1]);
+        }
+        else codeGenerator.closeBranch();
     }
 }

@@ -7,4 +7,9 @@ public class DiagramTerminatorStart extends DiagramTerminator {
        this.setCaption("Начало");
     }
 
+    @Override
+    public void generateCode(SchemeCompiler.CodeGenerator codeGenerator) {
+
+        codeGenerator.addMain();
+    }
 }

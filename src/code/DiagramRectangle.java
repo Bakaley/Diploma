@@ -28,7 +28,6 @@ class DiagramRectangle extends AbstractDiagramNode {
         addVertex("up", new Vertex( scaleX(mX),  scaleY(mY +HEIGHT/2)));
 
         getCanvas().setFont(getCanvas().getFont().deriveFont((float) scale(FONTSIZEPT)));
-        FontMetrics metrics = getCanvas().getFontMetrics();
         getCanvas().setColor(colorBorder);
         getCanvas().drawRect(scaleX(mX -WIDTH/2) ,scaleY(mY - HEIGHT / 2), scale(WIDTH), scale(HEIGHT));
         getCanvas().setColor(colorFill);
@@ -85,12 +84,17 @@ class DiagramRectangle extends AbstractDiagramNode {
         return null;
     }
 
-
-
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {
         hintStr.append("Operation: " + getCaption());
         return true;
     }
 
+    @Override
+    public void generateCode(SchemeCompiler.CodeGenerator codeGenerator) {
+        String[] strings = code.split("\n");
+        for (String str : strings) {
+            codeGenerator.add(str);
+        }
+    }
 }

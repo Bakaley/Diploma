@@ -103,8 +103,23 @@ class DiagramRhombus extends AbstractDiagramNode {
 
     @Override
     protected boolean internalGetHint(StringBuilder hintStr) {
-        hintStr.append("Condtition: " + getCaption());
+        hintStr.append("Условие: " + getCaption());
         return true;
     }
 
+    public DiagramGeneralization getTrueBranch(){
+        for (AbstractDiagramLink link :
+                get_lines_out()) {
+            if (link.label.caption.equals("true")) return (DiagramGeneralization)link;
+        }
+        return null;
+    }
+
+    public DiagramGeneralization getFalseBranch(){
+        for (AbstractDiagramLink link :
+                get_lines_out()) {
+            if (link.label.caption.equals("false")) return (DiagramGeneralization)link;
+        }
+        return null;
+    }
 }
