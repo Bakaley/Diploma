@@ -37,6 +37,7 @@ public class DiagramPanel extends JPanel {
 
     // UI components
     private static DiagramCanvas canvas;
+    public static void canvasRepaint(){canvas.repaint();}
     private final JScrollBar hsb;
     private final JScrollBar vsb;
     private final JToggleButton handButton;
@@ -63,6 +64,7 @@ public class DiagramPanel extends JPanel {
     private static JToggleButton pressed = null;
 
     public static ContextFrame contextFrame = null;
+    public static JFrame codeFrame = null;
 
 
     private final SelectionManager selection = new SelectionManager();
@@ -523,13 +525,20 @@ public class DiagramPanel extends JPanel {
                 generatedCode = generatedCode + "\n" + str;
                 generatedCode = "#include <iostream>\n" +
                         "using namespace std;\n" + generatedCode;
-                System.out.println(generatedCode);
+
+                codeFrame = new JFrame();
+                codeFrame.setUndecorated(true);
+                codeFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                codeFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                //JPanel codePanel = new JPanel();
+                TextArea textFieldExpression = new TextArea(generatedCode,35, 80);
+                //codePanel.add(textFieldExpression);
+                codeFrame.getContentPane().add(textFieldExpression);
+                codeFrame.pack();
+                codeFrame.setLocation(350 , 250);
+                codeFrame.setVisible(true);
             }
             catch (SchemeCompiler.SchemeCompilationException exception){
-                if(exception.invalidBlock != null){
-                    exception.invalidBlock.errorPaint();
-                    canvas.repaint();
-                }
                 JOptionPane.showMessageDialog(null, exception.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -567,14 +576,14 @@ public class DiagramPanel extends JPanel {
 
         //все блоки связаны
         DiagramTerminatorStart start = scheme.getStartTerm() ;
-        if(start == null) throw new SchemeCompiler.SchemeCompilationException("На схеме отсуствтует блок начала");
+        if(start == null) throw new SchemeCompiler.SchemeCompilationException("На схеме отсутствует блок начала");
 
         DiagramTerminatorEnd end = scheme.getEndTerm() ;
-        if(end == null) throw new SchemeCompiler.SchemeCompilationException("На схеме отсутствтует блок конца");
+        if(end == null) throw new SchemeCompiler.SchemeCompilationException("На схеме отсутствует блок конца");
 
         boolean errorFlag = false;
         String errorMessage = "В следующие блоки невозможно попасть из блока начала:";
-
+        ArrayList<AbstractDiagramNode> errList = new ArrayList<>();
         ArrayList<AbstractDiagramNode> objCopy = (ArrayList<AbstractDiagramNode>) objs.clone();
         ArrayList<AbstractDiagramNode> chainedNodes = start.getChainedBlocksDown();
         for (DiagramObject obj: (ArrayList<AbstractDiagramNode>) objs.clone()) {
@@ -587,45 +596,48 @@ public class DiagramPanel extends JPanel {
             errorFlag = true;
             for (DiagramObject node: objCopy) {
                 errorMessage += "\n" + node.getName();
-                ((AbstractDiagramNode)node).errorPaint();
-
-                canvas.repaint();
+                errList.add((AbstractDiagramNode) node);
             }
         }
-        if(errorFlag) throw new SchemeCompiler.SchemeCompilationException(errorMessage);
-
+        if(errorFlag) throw new SchemeCompiler.SchemeCompilationException(errorMessage, errList);
 
         errorMessage = "Из следующих блоков невозможность попасть к блоку конца:";
-        for (DiagramObject obj: objs) {
-            if(!obj.getClass().equals(DiagramGeneralization.class)){
-                AbstractDiagramNode node = (AbstractDiagramNode)obj;
-                if(!node.getClass().equals(DiagramTerminatorEnd.class) && node.get_lines_out().size() == 0){
-                    errorFlag = true;
-                    errorMessage += "\n" + node.getName();
-                    ((AbstractDiagramNode)node).errorPaint();
-                    canvas.repaint();
-                }
+        errList = new ArrayList<>();
+        objCopy = (ArrayList<AbstractDiagramNode>) objs.clone();
+        chainedNodes = end.getChainedBlocksUp();
+        for (DiagramObject obj: (ArrayList<AbstractDiagramNode>) objs.clone()) {
+            if (obj.getClass().equals(DiagramGeneralization.class)) objCopy.remove(obj);
+        }
+        for (DiagramObject obj: chainedNodes) {
+            if (chainedNodes.contains(obj)) objCopy.remove(obj);
+        }
+        objCopy.remove(end);
+        if(objCopy.size() != 0){
+            errorFlag = true;
+            for (DiagramObject node: objCopy) {
+                errorMessage += "\n" + node.getName();
+                errList.add((AbstractDiagramNode) node);
             }
         }
-        if(errorFlag) throw new SchemeCompiler.SchemeCompilationException(errorMessage);
+        if(errorFlag) throw new SchemeCompiler.SchemeCompilationException(errorMessage, errList);
 
-        errorMessage = "Блоки условий должны иметь ровно 2 выхода:";
+        errorMessage = "Блоки условий должны иметь ровно два выхода:";
+        errList = new ArrayList<>();
         for (DiagramObject obj: objs) {
             if(!obj.getClass().equals(DiagramGeneralization.class)){
                 AbstractDiagramNode node = (AbstractDiagramNode)obj;
                 if(node.getClass().equals(DiagramRhombus.class) && node.get_lines_out().size() < 2){
                     errorFlag = true;
                     errorMessage += "\n" + node.getName();
-                    ((AbstractDiagramNode)node).errorPaint();
-                    canvas.repaint();
+                    errList.add(node);
                 }
             }
         }
-        if(errorFlag) throw new SchemeCompiler.SchemeCompilationException(errorMessage);
+        if(errorFlag) throw new SchemeCompiler.SchemeCompilationException(errorMessage, errList);
 
         SchemeCompiler schemeCompiler = new SchemeCompiler();
 
-        return schemeCompiler.compile(start.getChainedBlocksDown());
+        return schemeCompiler.compile(scheme);
     }
 
     public void refreshButtons(){
@@ -713,7 +725,7 @@ public class DiagramPanel extends JPanel {
         }
     }
 
-    private Scheme parse(JSONObject jsonObject){
+    public Scheme parse(JSONObject jsonObject){
 
         try {
             Scheme scheme = new Scheme(true);
@@ -802,6 +814,7 @@ public class DiagramPanel extends JPanel {
 
         //клик на холст закрывает текущее окно свойств
         if (contextFrame!= null) contextFrame.dispose();
+        if (codeFrame!= null) codeFrame.dispose();
 
         Point cursorPos = MouseInfo.getPointerInfo().getLocation();
         if (panningMode) {

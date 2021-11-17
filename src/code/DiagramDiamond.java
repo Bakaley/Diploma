@@ -115,7 +115,7 @@ public class DiagramDiamond extends AbstractDiagramNode{
                         if (link.nTo.getClass().equals(DiagramDiamond.class)) {
                             DiagramDiamond loop = (DiagramDiamond) link.nTo;
                             if (loop.cycleName.equals(cycleName) && loop.isOpening)
-                                throw new SchemeCompiler.SchemeCompilationException("Нельзя выходить из цикла, не закрыв его");
+                                throw new SchemeCompiler.SchemeCompilationException("Нельзя выходить из цикла, не закрыв его", loop);
                             if (loop.cycleName.equals(cycleName) && !loop.isOpening) {
                                 loopEnd = loop;
                                 checkedNodes.add(loop);
@@ -155,7 +155,7 @@ public class DiagramDiamond extends AbstractDiagramNode{
                         if (link.nFrom.getClass().equals(DiagramDiamond.class)) {
                             DiagramDiamond loop = (DiagramDiamond) link.nFrom;
                             if (loop.cycleName.equals(cycleName) && !loop.isOpening)
-                                throw new SchemeCompiler.SchemeCompilationException("Нельзя выходить из цикла, не закрыв его");
+                                throw new SchemeCompiler.SchemeCompilationException("Нельзя выходить из цикла, не закрыв его", loop);
                             if (loop.cycleName.equals(cycleName) && loop.isOpening) {
                                 loopStart = loop;
                                 checkedNodes.add(loop);

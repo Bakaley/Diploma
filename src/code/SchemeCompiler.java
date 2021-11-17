@@ -17,9 +17,7 @@ public class SchemeCompiler {
     final static String OPERATOR_MULTIPLICATION = "*";
     final static String OPERATOR_DIVISION = "/";
     final static String OPERATOR_MODULE_DIVISION = "%";
-
     final static String OPERATOR_ASSIGNMENT = "=";
-
     final static String OPERATOR_EQUALS = "==";
     final static String OPERATOR_NOT_EQUALS = "!=";
     final static String OPERATOR_AND = "&&";
@@ -28,7 +26,6 @@ public class SchemeCompiler {
     final static String OPERATOR_LESS = "<";
     final static String OPERATOR_MORE_OR_EQUALS = ">=";
     final static String OPERATOR_LESS_OR_EQUALS = "<=";
-
     final static String OPERATOR_NOT = "!";
     final static String OPERATOR_INCREMENT = "++";
     final static String OPERATOR_DECREMENT = "--";
@@ -37,12 +34,12 @@ public class SchemeCompiler {
     final static ArrayList<String> binaryOperators = new ArrayList<>();
     final static ArrayList<String> operatorsList = new ArrayList<>();
 
-    static String legitVarSymbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-    static String digits = "0123456789";
+    final static String legitVarSymbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+    final static String digits = "0123456789";
 
     static HashMap<String, Integer> priorityMap = new HashMap<>();
 
-    static AbstractDiagramNode currentBlock;
+    AbstractDiagramNode currentBlock;
     static boolean stringConcatFlag;
     static boolean coutFlag;
     static String currentString;
@@ -101,82 +98,205 @@ public class SchemeCompiler {
         NULL
     }
 
-    ArrayList<Variable> variables = new ArrayList<>();
-
-    public String compile(ArrayList<AbstractDiagramNode> blocks){
-        variables = new ArrayList<>();
-        ArrayList<String> loops = new ArrayList<>();
-        ArrayList<DiagramPreprocess> preprocesses = new ArrayList<>();
-
-        ArrayList<DiagramDiamond> loopBlocks = new ArrayList<>();
+    public String compile(Scheme scheme){
+        currentBlock = scheme.getStartTerm();
+        ArrayList<AbstractDiagramNode> blocks = currentBlock.getChainedBlocksDown();
         for (AbstractDiagramNode block : blocks) {
-            block.resetCodeString();
-            currentBlock = block;
-            if(DiagramTerminator.class.isAssignableFrom(block.getClass())) continue;
-            if(block.getClass().equals(DiagramPreprocess.class)) {
-                preprocesses.add((DiagramPreprocess) block);
-                continue;
-            };
-            if(block.getClearCaption().isEmpty()){
-                if(block.getClass().equals(DiagramRhombus.class)) throw new SchemeCompilationException("В блоке условия должно находиться BOOL выражение");
-                else if(block.getClass().equals(DiagramDiamond.class)) throw new SchemeCompilationException("Блоки циклов должны содержать имя своего цикла в верхней строке. Если блок начинает цикл, то во второй строке также должно находиться BOOL условие");
-                else continue;
+            block.compilingReset();
+        }
+        Stack<List<Variable>> varStack = new Stack<>();
+        ArrayList<String> loops = new ArrayList<>();
+        ArrayList<DiagramDiamond> loopBlocks = new ArrayList<>();
+        ArrayList<AbstractDiagramNode> scanned = new ArrayList<>();
+        Stack <AbstractDiagramNode> scopeOpeners = new Stack<>();
+        Stack <DiagramGeneralization> stack = new Stack<>();
+        CodeGenerator codeGenerator = new CodeGenerator();
+
+        currentBlock.generateCode(codeGenerator);
+        currentBlock.get_lines_out().get(0).passed = true;
+        stack.push(currentBlock.get_lines_out().get(0));
+        varStack.push(new ArrayList<>());
+        currentBlock = stack.lastElement().getnTo();
+
+        while (!currentBlock.getClass().equals(DiagramTerminatorEnd.class)) {
+            if (currentBlock.getClearCaption().isEmpty()) {
+                if (currentBlock.getClass().equals(DiagramRhombus.class))
+                    throw new SchemeCompilationException("В блоке условия должно находиться BOOL выражение", currentBlock);
+                else if (currentBlock.getClass().equals(DiagramDiamond.class))
+                    throw new SchemeCompilationException("Блоки циклов должны содержать имя своего цикла в верхней строке. Если блок начинает цикл, то во второй строке также должно находиться BOOL условие", currentBlock);
             }
-            if(block.getClass().equals(DiagramDiamond.class)) loopBlocks.add((DiagramDiamond)block);
-            String[] strings = block.getClearCaption().split("\r\n");
-            if(block.getClass().equals(DiagramRhombus.class) && strings.length != 1) throw new SchemeCompilationException("В блоке условия может находиться только одна строка");
-            if(block.getClass().equals(DiagramDiamond.class)){
-                if(block.getClearCaption().isEmpty())throw new SchemeCompilationException("Блоки циклов должны содержать имя своего цикла в верхней строке. Если блок начинает цикл, то во второй строке также должно находиться BOOL условие");
-                ArrayList<Lexeme> lexemes1 = lexemesParse(strings[0]);
-                switch (strings.length){
+            currentBlock.resetCodeString();
+            String[] strings = currentBlock.getClearCaption().split("\r\n");
+            if(scanned.contains(currentBlock)){
+                if(!currentBlock.getClass().equals(DiagramRhombus.class)) throw new SchemeCompilationException("Возвращение в ранее пройденную точку программы хоть и возможно, но является плохим тоном. Вместо этого используйте циклы.", currentBlock);
+            }
+            else{
+                scanned.add(currentBlock);
+            }
+            if (currentBlock.getClass().equals(DiagramRhombus.class)) {
+                DiagramRhombus rhombus = (DiagramRhombus) currentBlock;
+                if (strings.length != 1)
+                    throw new SchemeCompilationException("В блоке условия может находиться только одна строка", rhombus);
+                ArrayList<Lexeme> lexemes = lexemesParse(strings[0]);
+                ArrayList<Operator> operators = operatorsList(lexemes);
+                DATA_TYPE result = solve(lexemes, operators, varStack);
+                if (currentBlock.getClass().equals(DiagramRhombus.class) && !result.equals(DATA_TYPE.BOOL))
+                    throw new SchemeCompilationException("В блоке условия должно находиться BOOL выражение");
+                varStack.push(new ArrayList<>());
+                if (!rhombus.getTrueBranch().passed) {
+                    rhombus.getTrueBranch().passed = true;
+                    stack.add(rhombus.getTrueBranch());
+                    codeGenerator.addIf(rhombus.caption);
+                    scopeOpeners.push(rhombus);
+                } else if (!rhombus.getFalseBranch().passed) {
+                    rhombus.getFalseBranch().passed = true;
+                    stack.add(rhombus.getFalseBranch());
+                    codeGenerator.addElse();
+                    scopeOpeners.push(rhombus);
+                } else {
+                    AbstractDiagramLink link = stack.pop();
+                    while (!link.nFrom.getClass().equals(DiagramRhombus.class)) {
+                        link = stack.pop();
+                    }
+                    currentBlock = link.nFrom;
+                }
+            } else if (currentBlock.getClass().equals(DiagramPreprocess.class)) {
+                DiagramPreprocess pp = (DiagramPreprocess) currentBlock;
+                if(strings.length == 0 || pp.getClearCaption().isEmpty()) throw new SchemeCompilationException("Все функции должны быть проименованы");
+                else if(strings.length > 1) throw new SchemeCompilationException("В одном блоке подпроцесса может быть только одна функция");
+                else{
+                    String str = pp.getClearCaption();
+                    if(str.charAt(pp.getClearCaption().length()-1) != ')' || str.charAt(pp.getClearCaption().length()-2) != '(')
+                        throw new SchemeCompilationException("В конце имени функции должны стоять скобки без параметров \"()\"");
+                    str = str.substring(0, str.length() - 1);
+                    str = str.substring(0, str.length() - 1);
+                    if(str.length() == 0) throw new SchemeCompilationException("Все функции должны быть проименованы");
+                    for (char c : str.toCharArray()) {
+                        if(legitVarSymbols.indexOf(c) < 0 && digits.indexOf(c) < 0) throw new SchemeCompilationException("В имени функции допустимы только латинские буквы и цифры");
+                    }
+                    if(digits.indexOf(str.charAt(0)) > -1) throw new SchemeCompilationException("Имя функции не может начинаться с цифры");
+                }
+                try{
+                    DiagramPanel.generatedCode = DiagramPanel.compileDiagram(pp.innerScheme) + "\n" + DiagramPanel.generatedCode;
+                }
+                catch (SchemeCompilationException e){
+                    currentBlock = pp;
+                    throw new SchemeCompilationException("Следующий предопределенный процесс содержит внутренние ошибки:\n" + pp.getName(), pp);
+                }
+                pp.generateCode(codeGenerator);
+                currentBlock.get_lines_out().get(0).passed = true;
+                stack.add(currentBlock.get_lines_out().get(0));
+            } else if (currentBlock.getClass().equals(DiagramDiamond.class)) {
+                loopBlocks.add((DiagramDiamond) currentBlock);
+                if (currentBlock.getClearCaption().isEmpty())
+                    throw new SchemeCompilationException("Блоки циклов должны содержать имя своего цикла в верхней строке. Если блок начинает цикл, то во второй строке также должно находиться BOOL условие", currentBlock);
+                ArrayList<Lexeme> loopLexemes = lexemesParse(strings[0]);
+                switch (strings.length) {
                     case 1:
-                        DATA_TYPE result = solve(lexemes1, operatorsList(lexemes1), new ArrayList<>());
-                        if(result == DATA_TYPE.STRING && lexemes1.size() == 1 && lexemes1.get(lexemes1.size()-1).type == TOKEN_TYPE.STRING_CONST){
-                            if(loops.contains(strings[0])){
-                                if(loops.get(loops.size()-1).equals(strings[0])){
+                        DATA_TYPE result = solve(loopLexemes, operatorsList(loopLexemes), varStack);
+                        if (result == DATA_TYPE.STRING && loopLexemes.size() == 1 && loopLexemes.get(loopLexemes.size() - 1).type == TOKEN_TYPE.STRING_CONST) {
+                            if (loops.contains(strings[0])) {
+                                if (loops.get(loops.size() - 1).equals(strings[0])) {
                                     loops.remove(strings[0]);
-                                    ((DiagramDiamond)currentBlock).cycleName = strings[0];
-                                    ((DiagramDiamond)currentBlock).isOpening = false;
-                                } else throw new SchemeCompilationException("Циклы должны закрываться в последовательнности, обратной той, как открывались");
-                            } else throw new SchemeCompilationException("Неизвестное имя закрывающегося цикла. Если вы хотите объявить новый цикл, во второй строке должно находиться BOOL условие");
-                        } else throw new SchemeCompilationException("В первой строке блока цикла должно находиться имя цикла в формате STRING");
+                                    ((DiagramDiamond) currentBlock).cycleName = strings[0];
+                                    ((DiagramDiamond) currentBlock).isOpening = false;
+                                    currentBlock.generateCode(codeGenerator);
+                                    currentBlock.get_lines_out().get(0).passed = true;
+                                    stack.add(currentBlock.get_lines_out().get(0));
+                                    varStack.pop();
+                                } else
+                                    throw new SchemeCompilationException("Циклы должны закрываться в последовательнности, обратной той, как открывались", currentBlock);
+                            } else
+                                throw new SchemeCompilationException("Неизвестное имя закрывающегося цикла. Если вы хотите объявить новый цикл, во второй строке должно находиться BOOL условие", currentBlock);
+                        } else
+                            throw new SchemeCompilationException("В первой строке блока цикла должно находиться имя цикла в формате STRING", currentBlock);
                         break;
                     case 2:
-                        DATA_TYPE result2 = solve(lexemes1, operatorsList(lexemes1), new ArrayList<>());
-                        if(result2 == DATA_TYPE.STRING && lexemes1.size() == 1 && lexemes1.get(lexemes1.size()-1).type == TOKEN_TYPE.STRING_CONST){
-                            if(loops.contains(strings[0])) throw new SchemeCompilationException("Нельзя внутри цикла объявить цикл с таким же именем");
-                            else{
+                        DATA_TYPE result2 = solve(loopLexemes, operatorsList(loopLexemes), varStack);
+                        if (result2 == DATA_TYPE.STRING && loopLexemes.size() == 1 && loopLexemes.get(loopLexemes.size() - 1).type == TOKEN_TYPE.STRING_CONST) {
+                            if (loops.contains(strings[0]))
+                                throw new SchemeCompilationException("Нельзя внутри цикла объявить цикл с таким же именем", currentBlock);
+                            else {
                                 loops.add(strings[0]);
-                                ((DiagramDiamond)currentBlock).cycleName = strings[0];
-                                ((DiagramDiamond)currentBlock).isOpening = true;
+                                ((DiagramDiamond) currentBlock).cycleName = strings[0];
+                                ((DiagramDiamond) currentBlock).isOpening = true;
                             }
-
                             ArrayList<Lexeme> lexemes2 = lexemesParse(strings[1]);
-                            result2 = solve(lexemes2, operatorsList(lexemes2), new ArrayList<>());
-                            if(result2 != DATA_TYPE.BOOL) throw new SchemeCompilationException("Во второй строке открывающегося цикла должно находиться условие");
-                        } else throw new SchemeCompilationException("В первой строке блока цикла должно находиться имя цикла в формате STRING");
+                            result2 = solve(lexemes2, operatorsList(lexemes2), varStack);
+                            if (result2 != DATA_TYPE.BOOL)
+                                throw new SchemeCompilationException("Во второй строке открывающегося цикла должно находиться BOOL условие", currentBlock);
+                            else{
+                                currentBlock.generateCode(codeGenerator);
+                                currentBlock.get_lines_out().get(0).passed = true;
+                                stack.add(currentBlock.get_lines_out().get(0));
+                                varStack.push(new ArrayList<>());
+                            }
+                        } else
+                            throw new SchemeCompilationException("В первой строке блока цикла должно находиться имя цикла в формате STRING", currentBlock);
                         break;
                     default:
-                        throw new SchemeCompilationException("Блоки циклов должны содержать имя своего цикла в верхней строке. Если блок начинает цикл, то во второй строке также должно находиться BOOL условие");
+                        throw new SchemeCompilationException("Блоки циклов должны содержать имя своего цикла в верхней строке. Если блок начинает цикл, то во второй строке также должно находиться BOOL условие", currentBlock);
                 }
-                //if(loops.size() == 0)
-            }
-            for (String string : strings) {
-                if(string.isEmpty()) continue;
-                currentString = string;
-                ArrayList<Lexeme> lexemes = lexemesParse(string);
-                ArrayList<Operator> operators = operatorsList(lexemes);
-                DATA_TYPE result = solve(lexemes, operators, variables);
-                if(block.getClass().equals(DiagramRhombus.class) && !result.equals(DATA_TYPE.BOOL)) throw new SchemeCompilationException("В блоке условия должно находиться BOOL выражение");
-                if(currentBlock.getClass().equals(DiagramRectangle.class)){
-                    if(stringConcatFlag) stringConcatFlag = false;
+            } else if (currentBlock.getClass().equals(DiagramRectangle.class)) {
+                for (String string : strings) {
+                    if (string.isEmpty()) continue;
+                    currentString = string;
+                    ArrayList<Lexeme> lexemes = lexemesParse(string);
+                    ArrayList<Operator> operators = operatorsList(lexemes);
+                    DATA_TYPE result = solve(lexemes, operators, varStack);
+                    if (stringConcatFlag) stringConcatFlag = false;
                     else currentBlock.addCodeString(currentString);
                 }
-                if(currentBlock.getClass().equals(DiagramParallelogram.class)){
-                    if(coutFlag) coutFlag = false;
+                currentBlock.generateCode(codeGenerator);
+                currentBlock.get_lines_out().get(0).passed = true;
+                stack.add(currentBlock.get_lines_out().get(0));
+            } else if (currentBlock.getClass().equals(DiagramParallelogram.class)) {
+                for (String string : strings) {
+                    if (string.isEmpty()) continue;
+                    currentString = string;
+                    ArrayList<Lexeme> lexemes = lexemesParse(string);
+                    ArrayList<Operator> operators = operatorsList(lexemes);
+                    DATA_TYPE result = solve(lexemes, operators, varStack);
+                     if (coutFlag) coutFlag = false;
                     else currentBlock.addCodeString("cout << (" + currentString + ") << endl");
                 }
+                currentBlock.generateCode(codeGenerator);
+                currentBlock.get_lines_out().get(0).passed = true;
+                stack.add(currentBlock.get_lines_out().get(0));
             }
+            AbstractDiagramNode next = stack.lastElement().nTo;
+            ArrayList<DiagramGeneralization> linesIn = next.get_lines_in();
+            if(linesIn.size() != 1){
+                int notPassed = 0;
+                for (DiagramGeneralization link : linesIn) {
+                    if(!link.passed) notPassed++;
+                }
+                while(scopeOpeners.size() !=0 && next.scopeOpeners.contains(scopeOpeners.lastElement())){
+                    next.scopeOpeners.remove(scopeOpeners.pop());
+                    codeGenerator.closeBranch();
+                    varStack.pop();
+                }
+                if(scopeOpeners.size() != 0 && notPassed != 0) next.scopeOpeners.add(scopeOpeners.pop());
+
+                if(notPassed != 0){
+                    AbstractDiagramLink link = stack.pop();
+                    while(!link.nFrom.getClass().equals(DiagramRhombus.class)){
+                        try {
+                            link = stack.pop();
+                        } catch (EmptyStackException e){
+                            throw new SchemeCompilationException("Возвращение в ранее пройденную точку программы хоть и возможно, но является плохим тоном. Вместо этого используйте циклы.", currentBlock.get_lines_out().get(0).nTo);
+                        }
+                    }
+                    currentBlock = link.nFrom;
+                    codeGenerator.closeBranch();
+                    varStack.pop();
+                }
+                else{
+                    if(next.scopeOpeners.size() != 0) throw new SchemeCompilationException("Управление не может быть передано команде в другой контекстной области", next);
+                    currentBlock = linesIn.get(0).nTo;
+                }
+            }
+            else currentBlock = linesIn.get(0).nTo;
         }
         if(loops.size() != 0){
             String err = "Циклы со следующими именами должны быть закрыты:";
@@ -191,97 +311,17 @@ public class SchemeCompiler {
             currentBlock = loop;
             if(loop.isOpening){
                 ArrayList<AbstractDiagramNode> chainedNodes = loop.getBlocksInLoop();
-                if(chainedNodes.contains(((Scheme)DiagramPanel.getDiagramObject()).getEndTerm())) throw new SchemeCompiler.SchemeCompilationException("Нельзя выходить из цикла, не пройдя через его закрывающий блок");
+                if(chainedNodes.contains(scheme.getEndTerm())) throw new SchemeCompiler.SchemeCompilationException("Нельзя выходить из цикла, не пройдя через его закрывающий блок", loop);
             }
             else{
                 ArrayList<AbstractDiagramNode> chainedNodes = loop.getBlocksInLoop();
-                if(chainedNodes.contains(((Scheme)DiagramPanel.getDiagramObject()).getStartTerm())) throw new SchemeCompiler.SchemeCompilationException("Нельзя входить в середину цикла, не пройдя через его открывающий блок");
+                if(chainedNodes.contains(scheme.getStartTerm())) throw new SchemeCompiler.SchemeCompilationException("Нельзя входить в середину цикла, не пройдя через его открывающий блок", loop);
             }
         }
 
-        for (DiagramPreprocess pp : preprocesses) {
-            currentBlock = pp;
-            String[] strings = pp.getClearCaption().split("\r\n");
-            if(strings.length == 0 || pp.getClearCaption().isEmpty()) throw new SchemeCompilationException("Все функции должны быть проименованы");
-            else if(strings.length > 1) throw new SchemeCompilationException("В одном блоке подпроцесса может быть только одна функция");
-            else{
-                String str = pp.getClearCaption();
-                if(str.charAt(pp.getClearCaption().length()-1) != ')' || str.charAt(pp.getClearCaption().length()-2) != '(')
-                    throw new SchemeCompilationException("В конце имени функции должны стоять скобки без параметров \"()\"");
-                str = str.substring(0, str.length() - 1);
-                str = str.substring(0, str.length() - 1);
-                if(str.length() == 0) throw new SchemeCompilationException("Все функции должны быть проименованы");
-                for (char c : str.toCharArray()) {
-                    if(legitVarSymbols.indexOf(c) < 0 && digits.indexOf(c) < 0) throw new SchemeCompilationException("В имени функции допустимы только латинские буквы и цифры");
-                }
-                if(digits.indexOf(str.charAt(0)) > -1) throw new SchemeCompilationException("Имя функции не может начинаться с цифры");
-            }
-            try{
-                DiagramPanel.generatedCode = DiagramPanel.compileDiagram(pp.innerScheme) + "\n" + DiagramPanel.generatedCode;
-            }
-            catch (SchemeCompilationException e){
-                currentBlock = pp;
-                throw new SchemeCompilationException("Следующий предопределенный процесс содержит внутренние ошибки:\n" + pp.getName());
-            }
-        }
-
-        for (AbstractDiagramNode node : blocks) {
-            if(node.getClass().equals(DiagramTerminatorStart.class)){
-                currentBlock = node;
-            }
-        }
-        Stack <DiagramGeneralization> stack = new Stack<>();
-        CodeGenerator codeGenerator = new CodeGenerator();
-        while (!currentBlock.getClass().equals(DiagramTerminatorEnd.class)){
-            if(currentBlock.getClass().equals(DiagramRhombus.class)){
-                DiagramRhombus rhombus = (DiagramRhombus) currentBlock;
-                if(!rhombus.getTrueBranch().passed){
-                    rhombus.getTrueBranch().passed = true;
-                    stack.add(rhombus.getTrueBranch());
-                    codeGenerator.addIf(rhombus.caption);
-                }
-                else if(!rhombus.getFalseBranch().passed){
-                    rhombus.getFalseBranch().passed = true;
-                    stack.add(rhombus.getFalseBranch());
-                    codeGenerator.addElse();
-                }
-                else{
-                    AbstractDiagramLink link = stack.pop();
-                    while(!link.nFrom.getClass().equals(DiagramRhombus.class)){
-                        link = stack.pop();
-                    }
-                    currentBlock = link.nFrom;
-                    codeGenerator.closeBranch();
-                }
-            }
-            else{
-                currentBlock.generateCode(codeGenerator);
-                currentBlock.get_lines_out().get(0).passed = true;
-                stack.add(currentBlock.get_lines_out().get(0));
-            }
-            ArrayList<DiagramGeneralization> linesIn = stack.lastElement().nTo.get_lines_in();
-            int notPassed = 0;
-            for (DiagramGeneralization link : linesIn) {
-                if(!link.passed) notPassed++;
-            }
-            if(notPassed != 0){
-                AbstractDiagramLink link = stack.pop();
-                while(!link.nFrom.getClass().equals(DiagramRhombus.class)){
-                    try {
-                        link = stack.pop();
-                    } catch (EmptyStackException e){
-                        throw new SchemeCompilationException("Возвращение в ранее пройденную точку программы хоть и возможно, но является плохим тоном. Вместо этого используйте циклы.");
-                    }
-                }
-                currentBlock = link.nFrom;
-                codeGenerator.closeBranch();
-            }
-            else{
-                currentBlock = linesIn.get(0).nTo;
-                if(linesIn.size() > 1) codeGenerator.closeBranch();
-            }
-        }
         codeGenerator.closeBranch();
+        varStack.pop();
+
         return codeGenerator.getGeneratedCode();
     }
 
@@ -307,12 +347,12 @@ public class SchemeCompiler {
                         tokens.add(c + "");
                         currentToken = "";
                         token_type = TOKEN_TYPE.VARIABLE;
-                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                 } else currentToken += c;
             } else if (c == ' ') {
                 if (token_type == TOKEN_TYPE.OPERATOR) {
                     if (operatorsList.contains(currentToken)) tokens.add(currentToken);
-                    else throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
+                    else throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
                 } else if (currentToken.length() != 0) tokens.add(currentToken);
                 currentToken = "";
                 token_type = TOKEN_TYPE.VARIABLE;
@@ -324,7 +364,7 @@ public class SchemeCompiler {
                         tokens.add(c + "");
                         currentToken = "";
                         token_type = TOKEN_TYPE.VARIABLE;
-                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
+                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
                 } else if (token_type == TOKEN_TYPE.INT_CONST || token_type == TOKEN_TYPE.FLOAT_CONST) {
                     tokens.add(currentToken);
                     tokens.add(c + "");
@@ -347,9 +387,9 @@ public class SchemeCompiler {
                         tokens.add(currentToken);
                         currentToken = "" + c;
                         token_type = TOKEN_TYPE.INT_CONST;
-                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                 } else {
-                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                 }
 
             } else if (c == '"') {
@@ -360,13 +400,13 @@ public class SchemeCompiler {
                 } else if (currentToken.length() == 0) {
                     currentToken = "" + c;
                     token_type = TOKEN_TYPE.STRING_CONST;
-                } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
             } else if (c == '.') {
                 if (token_type == TOKEN_TYPE.INT_CONST) {
                     currentToken += c;
                     token_type = TOKEN_TYPE.FLOAT_CONST;
                 } else {
-                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                 }
             } else if (c == '-') {
                 if (currentToken.length() == 0) {
@@ -383,20 +423,20 @@ public class SchemeCompiler {
                     token_type = TOKEN_TYPE.OPERATOR;
                 } else if (token_type == TOKEN_TYPE.OPERATOR) {
                     currentToken = currentToken + c;
-                    if (currentToken.length() >= 3) throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                    if (currentToken.length() >= 3) throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                     else if (!operatorsList.contains(currentToken))
-                        throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
-                } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                        throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
+                } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
             } else if (legitVarSymbols.indexOf(c) > -1) {
                 if (token_type == TOKEN_TYPE.OPERATOR) {
                     if (operatorsList.contains(currentToken)) {
                         tokens.add(currentToken);
                         currentToken = "";
                         token_type = TOKEN_TYPE.VARIABLE;
-                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
+                    } else throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
                 }
                 if (token_type == TOKEN_TYPE.INT_CONST || token_type == TOKEN_TYPE.FLOAT_CONST)
-                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                 currentToken = currentToken + c;
             } else if (legitVarSymbols.indexOf(c) < 0 && (token_type == TOKEN_TYPE.INT_CONST || token_type == TOKEN_TYPE.FLOAT_CONST || token_type == TOKEN_TYPE.VARIABLE)) {
                 if (currentToken.length() != 0) tokens.add(currentToken);
@@ -404,18 +444,18 @@ public class SchemeCompiler {
                 token_type = TOKEN_TYPE.OPERATOR;
             } else if (legitVarSymbols.indexOf(c) < 0 && token_type == TOKEN_TYPE.OPERATOR) {
                 currentToken = currentToken + c;
-                if (currentToken.length() >= 3) throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c);
+                if (currentToken.length() >= 3) throw new SchemeCompilationException("Неизвестная лексема " + currentToken + c, currentBlock);
                 else if (!operatorsList.contains(currentToken))
-                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
-            } else throw new SchemeCompilationException(currentToken);
+                    throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
+            } else throw new SchemeCompilationException(currentToken, currentBlock);
         }
         if (token_type == TOKEN_TYPE.STRING_CONST) {
-            if (currentToken.length() == 1) throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
+            if (currentToken.length() == 1) throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
             else if (currentToken.toCharArray()[currentToken.length() - 1] == '"') tokens.add(currentToken);
-            else throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
+            else throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
         } else if (token_type == TOKEN_TYPE.OPERATOR) {
             if (operatorsList.contains(currentToken)) tokens.add(currentToken);
-            else throw new SchemeCompilationException("Неизвестная лексема " + currentToken);
+            else throw new SchemeCompilationException("Неизвестная лексема " + currentToken, currentBlock);
         } else if (token_type == TOKEN_TYPE.INT_CONST || token_type == TOKEN_TYPE.FLOAT_CONST) {
             tokens.add(currentToken);
         } else if (currentToken.length() != 0) tokens.add(currentToken);
@@ -439,12 +479,12 @@ public class SchemeCompiler {
                 }
                 if (leftBracketsCount == rightBracketsCount)
                     lexes.add(new Operator(tokens.get(i), leftBracketsCount, i));
-                else throw new SchemeCompilationException("Brackets");
+                else throw new SchemeCompilationException("Количества открывающих и закрывающих скобок отличаются", currentBlock);
             } else if (parseTokenType(tokens.get(i)) == TOKEN_TYPE.VARIABLE) {
                 lexes.add(new Variable(tokens.get(i), DATA_TYPE.NULL));
             } else if (parseTokenType(tokens.get(i)) != TOKEN_TYPE.NULL) {
                 lexes.add(new Lexeme(tokens.get(i), parseTokenType(tokens.get(i))));
-            } else throw new SchemeCompilationException("Unknown lexeme " + tokens.get(i));
+            } else throw new SchemeCompilationException("Unknown lexeme " + tokens.get(i), currentBlock);
         }
         return lexes;
     }
@@ -460,99 +500,77 @@ public class SchemeCompiler {
         return operators;
     }
 
-    private ArrayList<Variable> variablesList(ArrayList<Lexeme> lexes){
-        ArrayList<Variable> variables = new ArrayList<>();
-        for (int i = 0; i < lexes.size(); i++) {
-            if (lexes.get(i).type == TOKEN_TYPE.DECLARATION) {
-                switch (lexes.get(i).sign) {
-                    case "int":
-                        variables.add(new Variable(lexes.get(i + 1).sign, DATA_TYPE.INT));
-                        break;
-                    case "float":
-                        variables.add(new Variable(lexes.get(i + 1).sign, DATA_TYPE.FLOAT));
-                        break;
-                    case "string":
-                        variables.add(new Variable(lexes.get(i + 1).sign, DATA_TYPE.STRING));
-                        break;
-                    case "bool":
-                        variables.add(new Variable(lexes.get(i + 1).sign, DATA_TYPE.BOOL));
-                        break;
-                }
-            }
-        }
-        return variables;
-    }
 
-    private DATA_TYPE solve(ArrayList<Lexeme> lexemes, ArrayList<Operator> operators, ArrayList<Variable> vars) {
+    private DATA_TYPE solve(ArrayList<Lexeme> lexemes, ArrayList<Operator> operators, Stack<List<Variable>> vars) {
 
         ArrayList<Object> convertedData = new ArrayList<>();
         String lastLex = "";
         for (Lexeme lexeme : lexemes) {
-            if (lexemes.size() == 1 && !currentBlock.getClass().equals(DiagramRhombus.class) && !currentBlock.getClass().equals(DiagramParallelogram.class) && !currentBlock.getClass().equals(DiagramDiamond.class)) throw new SchemeCompilationException("Выражение " + lexeme.sign + " не является операцией");
+            if (lexemes.size() == 1 && !currentBlock.getClass().equals(DiagramRhombus.class) && !currentBlock.getClass().equals(DiagramParallelogram.class) && !currentBlock.getClass().equals(DiagramDiamond.class)) throw new SchemeCompilationException("Выражение " + lexeme.sign + " не является операцией", currentBlock);
             switch (lexeme.type) {
                 case VARIABLE:
-                    if (variableExists(lexeme.sign)){
+                    if (isVarDeclared(vars, lexeme.sign)){
                         if(currentBlock.getClass().equals(DiagramParallelogram.class) && lexemes.size() == 1){
-                            convertedData.add(getVariableByName(lexeme.sign).dataType);
+                            convertedData.add(getVariableByName(vars, lexeme.sign).dataType);
                             currentBlock.addCodeString("cout << " + lexeme.sign + " << endl");
                             coutFlag = true;
                         }
                         else if(currentBlock.getClass().equals(DiagramRhombus.class) && lexemes.size() == 1){
-                            if(isVarDeclared(currentBlock, lexeme.sign)){
-                                convertedData.add(getVariableByName(lexeme.sign).dataType);
+                            if(isVarDeclared(vars, lexeme.sign)){
+                                convertedData.add(getVariableByName(vars,lexeme.sign).dataType);
                             }
-                            else throw new SchemeCompilationException("Неизвестная переменная " + lexeme.sign);
+                            else throw new SchemeCompilationException("Неизвестная переменная " + lexeme.sign, currentBlock);
                         }
                         else if (lexemes.get(1) == lexeme && lexemes.get(0).type == TOKEN_TYPE.DECLARATION) {
                             if(currentBlock.getClass().equals(DiagramRectangle.class) && lexemes.size() == 2){
-                                throw new SchemeCompilationException("Все объявленные переменные либо должны иметь значение по умолчанию, либо находиться в блоке пользовательского ввода:\n" + currentString);
+                                throw new SchemeCompilationException("Все объявленные переменные либо должны иметь значение по умолчанию, либо находиться в блоке пользовательского ввода:\n" + currentString, currentBlock);
                             }
                             else if(currentBlock.getClass().equals(DiagramParallelogram.class) && lexemes.size() >= 2){
-                                convertedData.add(getVariableByName(lexeme.sign).dataType);
+                                convertedData.add(getVariableByName(vars, lexeme.sign).dataType);
                                 currentBlock.addCodeString(currentString);
                                 currentBlock.addCodeString("cin >> " + lexemes.get(1).sign);
                                 coutFlag = true;
                             }
                             else if (currentBlock.getClass().equals(DiagramRectangle.class) && lexemes.size() > 2){
-                                convertedData.add(getVariableByName(lexeme.sign).dataType);
+                                convertedData.add(getVariableByName(vars, lexeme.sign).dataType);
                             }
                             else{
-                                throw new SchemeCompilationException("Объявление переменных допустимо только в блоке операций или ввода:\n" + currentString);
+                                throw new SchemeCompilationException("Объявление переменных допустимо только в блоке операций или ввода:\n" + currentString, currentBlock);
                             }
                         }
-                        else if(isVarDeclared(currentBlock, lexeme.sign)){
-                            convertedData.add(getVariableByName(lexeme.sign).dataType);
+                        else if(isVarDeclared(vars, lexeme.sign)){
+                            convertedData.add(getVariableByName(vars, lexeme.sign).dataType);
                         }
-                        else throw new SchemeCompilationException("Неизвестная переменная " + lexeme.sign);
+                        else throw new SchemeCompilationException("Неизвестная переменная " + lexeme.sign, currentBlock);
                     } else {
-                        throw new SchemeCompilationException("Неизвестная переменная " + lexeme.sign);
+                        throw new SchemeCompilationException("Неизвестная переменная " + lexeme.sign, currentBlock);
                     }
                     if (lastLex.length() != 0)
-                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией");
+                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией", currentBlock);
                     else lastLex = lexeme.sign;
                     break;
                 case STRING_CONST:
                     convertedData.add(DATA_TYPE.STRING);
                     if (lastLex.length() != 0)
-                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией");
+                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией", currentBlock);
                     else lastLex = lexeme.sign;
                     break;
                 case INT_CONST:
                     convertedData.add(DATA_TYPE.INT);
                     if (lastLex.length() != 0)
-                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией");
+                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией", currentBlock);
                     else lastLex = lexeme.sign;
                     break;
                 case FLOAT_CONST:
                     convertedData.add(DATA_TYPE.FLOAT);
                     if (lastLex.length() != 0)
-                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией");
+                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией", currentBlock);
                     else lastLex = lexeme.sign;
                     break;
                 case BOOL_CONST:
                     convertedData.add(DATA_TYPE.BOOL);
                     if (lastLex.length() != 0)
-                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией");
+                        throw new SchemeCompilationException("Выражение " + lastLex + " " + lexeme.sign + " не является операцией", currentBlock);
                     else lastLex = lexeme.sign;
                     break;
                 case OPERATOR:
@@ -562,28 +580,28 @@ public class SchemeCompiler {
                 case DECLARATION:
                     if (lexemes.get(0) == lexeme) {
                         if (lexemes.get(1).type == TOKEN_TYPE.VARIABLE) {
-                            if (!variableExists(lexemes.get(1).sign)) {
+                            if (!isVarDeclared(vars, lexemes.get(1).sign)) {
                                 switch (lexeme.sign) {
                                     case "int":
-                                        vars.add(new Variable(lexemes.get(1).sign, DATA_TYPE.INT));
+                                        vars.lastElement().add(new Variable(lexemes.get(1).sign, DATA_TYPE.INT));
                                         break;
                                     case "float":
-                                        vars.add(new Variable(lexemes.get(1).sign, DATA_TYPE.FLOAT));
+                                        vars.lastElement().add(new Variable(lexemes.get(1).sign, DATA_TYPE.FLOAT));
                                         break;
                                     case "string":
-                                        vars.add(new Variable(lexemes.get(1).sign, DATA_TYPE.STRING));
+                                        vars.lastElement().add(new Variable(lexemes.get(1).sign, DATA_TYPE.STRING));
                                         break;
                                     case "bool":
-                                        vars.add(new Variable(lexemes.get(1).sign, DATA_TYPE.BOOL));
+                                        vars.lastElement().add(new Variable(lexemes.get(1).sign, DATA_TYPE.BOOL));
                                         break;
-                                    default: throw new SchemeCompilationException("Неизвестный тип данных " + lexeme.sign);
+                                    default: throw new SchemeCompilationException("Неизвестный тип данных " + lexeme.sign, currentBlock);
                                 }
                             } else
-                                throw new SchemeCompilationException("Переменная с таким именем " + lexemes.get(1).sign + " уже существует");
+                                throw new SchemeCompilationException("Переменная с таким именем " + lexemes.get(1).sign + " уже существует в данной области", currentBlock);
                         } else
-                            throw new SchemeCompilationException("За объявленным типом " + lexeme.sign + " должна следовать переменная");
+                            throw new SchemeCompilationException("За объявленным типом " + lexeme.sign + " должна следовать переменная", currentBlock);
                     } else
-                        throw new SchemeCompilationException("Объявление переменной " + lexeme.sign + " допустимо только в начале строки");
+                        throw new SchemeCompilationException("Объявление переменной " + lexeme.sign + " допустимо только в начале строки", currentBlock);
                     break;
             }
         }
@@ -603,24 +621,24 @@ public class SchemeCompiler {
                 try {
                     data_type1 = (DATA_TYPE) convertedData.get(n - 1);
                 } catch (ClassCastException e) {
-                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(n - 1));
+                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(n - 1), currentBlock);
                 } catch (IndexOutOfBoundsException e) {
-                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " применяется к двум операндам");
+                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " применяется к двум операндам", currentBlock);
                 }
                 try {
                     data_type2 = (DATA_TYPE) convertedData.get(convertedData.indexOf(op) + 1);
                 } catch (ClassCastException e) {
-                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(n + 1));
+                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(n + 1), currentBlock);
                 } catch (IndexOutOfBoundsException e) {
-                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " применяется к двум операндам");
+                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " применяется к двум операндам", currentBlock);
                 }
                 if (op.sign.equals("=")) {
                     if (lexemes.get(0).type == TOKEN_TYPE.DECLARATION && lexemes.get(1).type == TOKEN_TYPE.VARIABLE && lexemes.get(2) == op) {
-                        data_type1 = getVariableByName(lexemes.get(1).sign).dataType;
+                        data_type1 = getVariableByName(vars, lexemes.get(1).sign).dataType;
                     } else if (lexemes.get(0).type == TOKEN_TYPE.VARIABLE && lexemes.get(1) == op) {
-                        data_type1 = getVariableByName(lexemes.get(0).sign).dataType;
+                        data_type1 = getVariableByName(vars, lexemes.get(0).sign).dataType;
                     } else {
-                        throw new SchemeCompilationException("Некорректное присваивание значения переменной");
+                        throw new SchemeCompilationException("Некорректное присваивание значения переменной", currentBlock);
                     }
                 }
                 DATA_TYPE dt = binaryOperationCheck(op, data_type1, data_type2);
@@ -643,9 +661,9 @@ public class SchemeCompiler {
                         Lexeme var;
                         if(lexemes.get(1).type == TOKEN_TYPE.VARIABLE) var = lexemes.get(1);
                         else var = lexemes.get(0);
-                        throw new SchemeCompilationException("Переменной " + var.sign + " типа " + getVariableByName(var.sign).dataType + " не может быть присвоено значение " + convertedData.get(convertedData.size()-1));
+                        throw new SchemeCompilationException("Переменной " + var.sign + " типа " + getVariableByName(vars, var.sign).dataType + " не может быть присвоено значение " + convertedData.get(convertedData.size()-1), currentBlock);
                     }
-                    else throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(convertedData.indexOf(op) - 1) + " и " + convertedData.get(convertedData.indexOf(op) + 1));
+                    else throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(convertedData.indexOf(op) - 1) + " и " + convertedData.get(convertedData.indexOf(op) + 1), currentBlock);
             } else if (unaryOperators.contains(((Operator) op).sign)) {
                 int n = convertedData.indexOf(op);
                 int operandNumber = n;
@@ -657,6 +675,7 @@ public class SchemeCompiler {
                             break;
                         case OPERATOR_INCREMENT:
                         case OPERATOR_DECREMENT:
+                            assignementFlag = true;
                             operandNumber = n - 1;
                             break;
                     }
@@ -672,16 +691,16 @@ public class SchemeCompiler {
                             else data += ((Operator) obj).sign;
                         }
                     } else
-                        throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(operandNumber));
+                        throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(operandNumber), currentBlock);
                 } catch (ClassCastException e) {
-                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(operandNumber));
+                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " неприменим к " + convertedData.get(operandNumber), currentBlock);
                 } catch (IndexOutOfBoundsException e) {
-                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " не имеет операнда");
+                    throw new SchemeCompilationException("Оператор " + ((Operator) op).sign + " не имеет операнда", currentBlock);
                 }
             }
         }
         if(!assignementFlag && currentBlock.getClass().equals(DiagramRectangle.class))
-            throw new SchemeCompilationException("Операция " + currentString + " не имеет смысла, так как её результат нигде не хранится и не используется");
+            throw new SchemeCompilationException("Операция " + currentString + " не имеет смысла, так как её результат нигде не хранится и не используется", currentBlock);
         return (DATA_TYPE)convertedData.get(0);
     }
 
@@ -709,18 +728,15 @@ public class SchemeCompiler {
         return TOKEN_TYPE.VARIABLE;
     }
 
-    private boolean variableExists (String name){
-        for (Variable variable : variables) {
-            if (variable.sign.equals(name)) return true;
+    private Variable getVariableByName(Stack<List<Variable>> varStack, String name){
+        for (List<Variable> list :
+                varStack) {
+            for (Variable var :
+                    list) {
+                if (var.sign.equals(name)) return var;
+            }
         }
-        return false;
-    }
-
-    private Variable getVariableByName(String name){
-        for (Variable variable : variables) {
-            if (variable.sign.equals(name)) return variable;
-        }
-        return  null;
+        return null;
     }
 
     private class Lexeme {
@@ -759,24 +775,12 @@ public class SchemeCompiler {
         }
     }
 
-    private boolean isVarDeclared(AbstractDiagramNode node, String variable){
-        ArrayList<AbstractDiagramNode> chainedBlocksUp = node.getChainedBlocksUp();
-        chainedBlocksUp.add(node);
-        ArrayList<Variable> declaredVars = new ArrayList<>();
-        for (AbstractDiagramNode block : chainedBlocksUp) {
-            if(!DiagramTerminator.class.isAssignableFrom(block.getClass())){
-                if(!block.getClearCaption().isEmpty()){
-                    String[] strings = block.getClearCaption().split("\r\n");
-                    for (String string : strings) {
-                        ArrayList<Lexeme> lex = lexemesParse(string);
-                        ArrayList<Variable> c = variablesList(lex);
-                        declaredVars.addAll(c);
-                        for (Variable v :
-                                declaredVars) {
-                            if(v.sign.equals(variable)) return true;
-                        }
-                    }
-                }
+    private boolean isVarDeclared(Stack<List<Variable>> varStack, String variable){
+        for (List<Variable> list :
+                varStack) {
+            for (Variable var :
+                    list) {
+                if(var.sign.equals(variable)) return true;
             }
         }
         return false;
@@ -815,9 +819,9 @@ public class SchemeCompiler {
                 String str = "";
                 if (types.contains(DATA_TYPE.STRING)){
                     if(!currentBlock.getClass().equals(DiagramRectangle.class))
-                        throw new SchemeCompilationException("Объединять строки можно только в блоке операций");
+                        throw new SchemeCompilationException("Объединять строки можно только в блоке операций", currentBlock);
                     if(lexes.size() != 5)
-                        throw new SchemeCompilationException("Объединять строки можно только отдельной операцией, и только по две за раз");
+                        throw new SchemeCompilationException("Объединять строки можно только отдельной операцией, и только по две за раз", currentBlock);
                     if(var1 == DATA_TYPE.STRING && var2 == DATA_TYPE.STRING) return DATA_TYPE.STRING;
                     else if(var1 == DATA_TYPE.STRING && var2 != DATA_TYPE.STRING){
                         lexes.set(4, new Lexeme("to_string(" + lexes.get(4).sign + ")", TOKEN_TYPE.STRING_CONST));
@@ -870,24 +874,34 @@ public class SchemeCompiler {
     }
 
     public static class SchemeCompilationException extends RuntimeException {
-        public AbstractDiagramNode invalidBlock;
         public SchemeCompilationException(String message) {
             super(message);
-            invalidBlock = currentBlock;
+        }
+        public SchemeCompilationException(String message, AbstractDiagramNode block) {
+            super(message);
+            block.errorPaint();
+            DiagramPanel.canvasRepaint();
+        }
+        public SchemeCompilationException(String message, List<AbstractDiagramNode> blocks) {
+            super(message);
+            for (AbstractDiagramNode block : blocks) {
+                block.errorPaint();
+            }
+            DiagramPanel.canvasRepaint();
         }
     }
 
     public static class CodeGenerator{
         int indents = 0;
         String code = "";
-        void addMain(){
+        void addMain(AbstractDiagramNode currentBlock){
             if(((Scheme)(currentBlock.getParent())).parentScheme != null){
                 code += "void " + currentBlock.getParent().caption + "{\n";
             }
             else {
                 code += "int main(){\n";
-                indents++;
             }
+            indents++;
         }
         void add (String str){
             for (int i = 0; i < indents; i++) {
@@ -920,7 +934,7 @@ public class SchemeCompiler {
             for (int i = 0; i < indents; i++) {
                 code += "\t";
             }
-            add("while(" + str + "){\n");
+            code += "while(" + str + "){\n";
             indents ++;
         }
         String getGeneratedCode(){

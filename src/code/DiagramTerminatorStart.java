@@ -9,7 +9,6 @@ public class DiagramTerminatorStart extends DiagramTerminator {
 
     @Override
     public void generateCode(SchemeCompiler.CodeGenerator codeGenerator) {
-
-        codeGenerator.addMain();
+        codeGenerator.addMain(this);
     }
 }

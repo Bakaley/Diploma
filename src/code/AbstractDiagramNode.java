@@ -174,6 +174,18 @@ abstract class AbstractDiagramNode extends DiagramObject{
         return checkedNodes;
     }
 
+    ArrayList <AbstractDiagramNode> getPreviewBlocksInScope(){
+
+        ArrayList<AbstractDiagramNode> checkedNodes = new ArrayList<>();
+        AbstractDiagramNode block = this;
+
+        while(block.get_lines_in().size() == 1){
+            block = block.get_lines_in().get(0).nFrom;
+            checkedNodes.add(block);
+        }
+        return checkedNodes;
+    }
+
 
     protected static double SIZE_SCALE = 1.5;
     protected static int FONTSIZEPT = 10;
@@ -251,12 +263,18 @@ abstract class AbstractDiagramNode extends DiagramObject{
 
     String code = "";
     public void resetCodeString() {
-        for (DiagramGeneralization link : get_lines_in()) {  link.passed = false; }
-        for (DiagramGeneralization link : get_lines_out()) {  link.passed = false; }
-
         code = "";
     }
     public void addCodeString(String str){
         code += str + "\n";
     }
+
+    public void compilingReset() {
+        code = "";
+        for (DiagramGeneralization link : get_lines_in()) {  link.passed = false; }
+        for (DiagramGeneralization link : get_lines_out()) {  link.passed = false; }
+        scopeOpeners = new ArrayList<>();
+    }
+
+    public ArrayList<AbstractDiagramNode> scopeOpeners = new ArrayList<>();
 }
